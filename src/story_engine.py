@@ -24,45 +24,33 @@ class StoryEngine:
         }
         
         prompt = f"""
-        Write a compelling 50-word story about {topic} for a YouTube Short.
-        Break the story into exactly 5 logical scenes.
-        For each scene, provide:
-        1. The narration text (what is said).
-        2. A highly descriptive image prompt for an AI image generator (Stable Diffusion).
+        Write a short 5-scene Hinglish COMIC story about {topic}.
         
-        Return the result ONLY as a JSON object with this structure:
-        {{
-            "title": "Story Title",
-            "scenes": [
-                {{
-                    "narration": "Text for scene 1",
-                    "image_prompt": "Detailed image prompt for scene 1"
-                }},
-                ...
-            ]
-        }}
+        RULES:
+        1. 'narration': The AI narrator explaining the scene in Hinglish (Roman script, e.g., 'Dono ne gufa dekhi').
+        2. 'dialogue': The exact words characters say in Hinglish (Roman script) to be written IN the image.
+        3. 'image_prompt': Technical English description for a 4-panel comic grid.
+        
+        Return exactly 5 scenes in JSON format.
         """
         
-        system_prompt = """You are a professional webcomic writer.
-Generate a short 5-scene story in HINDI based on the topic.
-STYLE: Hand-drawn webcomic, minimalist line art, flat color shading, clean ink outlines.
+        system_prompt = """You are a Professional Comic Production Director.
+Your task is to generate a 5-scene HINGLISH webcomic script.
 
-CHARACTERS (MUST USE IN EVERY PROMPT):
-1. MONA: A girl with short black hair, wearing a pink shirt with a purple stripe.
-2. ANDY: A boy with brown curly hair, wearing a white shirt and a red tie, with round glasses.
+### PRODUCTION SETTINGS:
+- STYLE: Hand-drawn minimalist webcomic grid.
+- CHARACTER ANCHOR 1: MONA - Short black hair, pink shirt.
+- CHARACTER ANCHOR 2: ANDY - Brown curly hair, glasses, white shirt, red tie.
 
-CRITICAL RULES:
-1. THE NARRATION MUST BE IN HINDI (Devanagari).
-2. IMAGE PROMPTS must start with: 'Hand-drawn webcomic style, minimalist line art, flat color shading, clean ink outlines...'
-3. Include both Mona and Andy in most scenes to show interaction.
-4. Keep backgrounds simple.
-5. Return ONLY a valid JSON object.
-
-Format:
+### OUTPUT FORMAT:
 {
-  "title": "Hindi Title",
+  "title": "Hinglish Title",
   "scenes": [
-    {"narration": "Hindi text...", "image_prompt": "English prompt with Mona and Andy..."},
+    {
+      "narration": "AI Storytelling in Hinglish...", 
+      "dialogue": "Character speech in Hinglish...",
+      "image_prompt": "English prompt describing 4-panels with Mona and Andy..."
+    },
     ...
   ]
 }"""
@@ -122,26 +110,35 @@ Format:
                 content = clean_json_string(content)
                 
                 try:
-                    return json.loads(content)
+                    # Try to parse as JSON first
+                    data = json.loads(content)
+                    if "scenes" in data:
+                        return data
+                    # If it's a list, wrap it
+                    if isinstance(data, list):
+                        return {"title": "AI Story", "scenes": data}
                 except json.JSONDecodeError as e:
                     print(f"JSON still invalid after cleaning: {e}")
-                    # Last ditch effort: try to fix with a very aggressive regex
-                    try:
-                        # Extract everything that looks like a narration/image_prompt pair
-                        narrations = re.findall(r'"narration":\s*"(.*?)"', content)
-                        prompts = re.findall(r'"image_prompt":\s*"(.*?)"', content)
-                        title_match = re.search(r'"title":\s*"(.*?)"', content)
-                        title = title_match.group(1) if title_match else "AI Story"
-                        
-                        scenes = []
-                        for n, p in zip(narrations, prompts):
-                            scenes.append({"narration": n, "image_prompt": p})
-                        
-                        if len(scenes) >= 3:
-                            return {"title": title, "scenes": scenes}
-                    except:
-                        pass
-                    raise e
+                
+                # Last ditch effort: try to fix with a very aggressive regex
+                try:
+                    # Extract everything that looks like a narration/image_prompt pair
+                    narrations = re.findall(r'"narration":\s*"(.*?)"', content)
+                    prompts = re.findall(r'"image_prompt":\s*"(.*?)"', content)
+                    title_match = re.search(r'"title":\s*"(.*?)"', content)
+                    title = title_match.group(1) if title_match else "AI Story"
+                    
+                    scenes = []
+                    for n, p in zip(narrations, prompts):
+                        scenes.append({"narration": n, "image_prompt": p})
+                    
+                    if len(scenes) > 0:
+                        print(f"Recovered {len(scenes)} scenes via regex.")
+                        return {"title": title, "scenes": scenes}
+                except Exception as ex:
+                    print(f"Regex recovery failed: {ex}")
+                
+                raise ValueError("Could not extract scenes from model output.")
             else:
                 print(f"Error from OpenCode: {response.status_code} - {response.text}")
                 return None

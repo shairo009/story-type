@@ -9,21 +9,19 @@ from src.story_engine import StoryEngine
 from src.image_engine import ImageEngine
 from src.audio_engine import AudioEngine
 from src.video_engine import VideoEngine
-from src.uploader import YouTubeUploader
 
 load_dotenv()
 
-# Topics to choose from automatically
 TOPICS = [
     "Mona and Andy find a time machine", "Mona and Andy explore a haunted school", 
     "Mona and Andy get lost in a dinosaur forest", "Mona and Andy discover a secret alien base",
     "Mona and Andy try to bake a giant cake", "Mona and Andy find a magic portal in the attic"
 ]
 
-async def run_pipeline():
+async def run_dry_run():
     # Setup directories
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    temp_dir = f"temp_{timestamp}"
+    temp_dir = f"temp_dry_{timestamp}"
     os.makedirs(temp_dir, exist_ok=True)
     
     try:
@@ -58,29 +56,23 @@ async def run_pipeline():
             scenes_data.append({
                 "image_path": img_path,
                 "audio_path": aud_path,
-                "narration": scene.get("dialogue", scene["narration"]) # Show dialogue in image
+                "narration": scene["narration"]
             })
 
         # 3. Compose Video
-        print("--- Step 3: Composing Video ---")
+        print("--- Step 3: Composing Video (Dry Run) ---")
         video_engine = VideoEngine()
-        video_path_filename = f"{title.replace(' ', '_')}_{timestamp}.mp4"
-        video_path = video_engine.compose_video(scenes_data, video_path_filename)
+        video_path_filename = f"DRY_RUN_{title.replace(' ', '_')}_{timestamp}.mp4"
+        final_video_path = video_engine.compose_video(scenes_data, video_path_filename)
 
-        # 4. Upload to YouTube
-        print("--- Step 4: Uploading to YouTube ---")
-        uploader = YouTubeUploader()
-        description = f"AI generated story about {topic}.\n\n#shorts #ai #storytelling #storytype"
-        uploader.upload_video(video_path, f"{title} | AI Story", description)
-
-        print("--- Pipeline Complete! ---")
+        print(f"--- Dry Run Complete! Video saved at: {final_video_path} ---")
 
     except Exception as e:
-        print(f"Error in pipeline: {e}")
+        print(f"Error in dry run: {e}")
     finally:
         # Clean up assets (keep video)
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
 
 if __name__ == "__main__":
-    asyncio.run(run_pipeline())
+    asyncio.run(run_dry_run())
