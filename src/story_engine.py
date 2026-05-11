@@ -69,11 +69,55 @@ class StoryEngine:
                     return None
                 # Clean markdown and find the JSON object
                 import re
-                json_match = re.search(r"\{.*\}", content, re.DOTALL)
-                if json_match:
-                    content = json_match.group(0)
                 
-                return json.loads(content)
+                def clean_json_string(s):
+                    # Remove thinking blocks if any
+                    s = re.sub(r'<thinking>.*?</thinking>', '', s, flags=re.DOTALL)
+                    # Find the first { and last }
+                    start = s.find('{')
+                    end = s.rfind('}')
+                    if start != -1 and end != -1:
+                        s = s[start:end+1]
+                    
+                    # Fix common malformations in arrays of objects
+                    s = s.replace('"},"{', '"},{"')
+                    s = s.replace('"}, "{', '"},{"')
+                    s = s.replace('"} "{', '"},{"')
+                    s = s.replace('"},"', '"},{"')
+                    
+                    # Fix the specific "{" issue
+                    s = s.replace('","{', '",{"')
+                    s = s.replace('"],"{"', '":[{"')
+                    
+                    # General cleanup: remove extra quotes around objects
+                    s = re.sub(r'("\s*\{)', '{', s)
+                    s = re.sub(r'(\}\s*")', '}', s)
+                    
+                    return s
+
+                content = clean_json_string(content)
+                
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError as e:
+                    print(f"JSON still invalid after cleaning: {e}")
+                    # Last ditch effort: try to fix with a very aggressive regex
+                    try:
+                        # Extract everything that looks like a narration/image_prompt pair
+                        narrations = re.findall(r'"narration":\s*"(.*?)"', content)
+                        prompts = re.findall(r'"image_prompt":\s*"(.*?)"', content)
+                        title_match = re.search(r'"title":\s*"(.*?)"', content)
+                        title = title_match.group(1) if title_match else "AI Story"
+                        
+                        scenes = []
+                        for n, p in zip(narrations, prompts):
+                            scenes.append({"narration": n, "image_prompt": p})
+                        
+                        if len(scenes) >= 3:
+                            return {"title": title, "scenes": scenes}
+                    except:
+                        pass
+                    raise e
             else:
                 print(f"Error from OpenCode: {response.status_code} - {response.text}")
                 return None

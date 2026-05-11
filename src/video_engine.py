@@ -1,4 +1,4 @@
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips, TextClip, CompositeVideoClip
+from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
 import os
 
 class VideoEngine:
@@ -20,20 +20,9 @@ class VideoEngine:
         # Simple zoom effect (Ken Burns)
         clip = clip.resize(lambda t: 1 + 0.05 * t/duration)
         
-        # Add subtitles
-        txt_clip = TextClip(
-            text, 
-            fontsize=70, 
-            color='white', 
-            font='Arial-Bold', 
-            stroke_color='black', 
-            stroke_width=2, 
-            method='caption',
-            size=(self.size[0]*0.8, None)
-        ).set_duration(duration).set_position(('center', 1400))
-        
-        video = CompositeVideoClip([clip, txt_clip])
-        video = video.set_audio(audio)
+        # Temporarily skipping subtitles due to ImageMagick dependency
+        # video = CompositeVideoClip([clip, txt_clip])
+        video = clip.set_audio(audio)
         
         return video
 
