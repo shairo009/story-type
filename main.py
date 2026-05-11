@@ -15,9 +15,9 @@ load_dotenv()
 
 # Topics to choose from automatically
 TOPICS = [
-    "cyberpunk mystery", "lost underwater city", "space exploration gone wrong",
-    "ancient dragon in modern city", "AI gaining consciousness", "time traveler's mistake",
-    "hidden jungle temple", "steampunk revolution", "haunted digital world"
+    "Mona and Andy find a time machine", "Mona and Andy explore a haunted school", 
+    "Mona and Andy get lost in a dinosaur forest", "Mona and Andy discover a secret alien base",
+    "Mona and Andy try to bake a giant cake", "Mona and Andy find a magic portal in the attic"
 ]
 
 async def run_pipeline():

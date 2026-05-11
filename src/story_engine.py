@@ -43,13 +43,37 @@ class StoryEngine:
         }}
         """
         
+        system_prompt = """You are a professional webcomic writer.
+Generate a short 5-scene story in HINDI based on the topic.
+STYLE: Hand-drawn webcomic, minimalist line art, flat color shading, clean ink outlines.
+
+CHARACTERS (MUST USE IN EVERY PROMPT):
+1. MONA: A girl with short black hair, wearing a pink shirt with a purple stripe.
+2. ANDY: A boy with brown curly hair, wearing a white shirt and a red tie, with round glasses.
+
+CRITICAL RULES:
+1. THE NARRATION MUST BE IN HINDI (Devanagari).
+2. IMAGE PROMPTS must start with: 'Hand-drawn webcomic style, minimalist line art, flat color shading, clean ink outlines...'
+3. Include both Mona and Andy in most scenes to show interaction.
+4. Keep backgrounds simple.
+5. Return ONLY a valid JSON object.
+
+Format:
+{
+  "title": "Hindi Title",
+  "scenes": [
+    {"narration": "Hindi text...", "image_prompt": "English prompt with Mona and Andy..."},
+    ...
+  ]
+}"""
+        
         data = {
             "model": self.model_name,
             "max_tokens": 1024,
             "messages": [
                 {"role": "user", "content": prompt}
             ],
-            "system": "You are a creative storyteller. Output only raw JSON."
+            "system": system_prompt
         }
         
         print(f"Generating story using {self.model_name} at {self.base_url}...")
