@@ -17,7 +17,13 @@ class ImageEngine:
         return data.startswith(b'\xff\xd8') or data.startswith(b'\x89PNG')
 
     def generate_image(self, prompt, output_path, retries=3):
-        clean_prompt = prompt.split("Panel")[0].strip()[:100] + ", vibrant comic style"
+        # Apply the Master Style with strict layout rules for a 2x2 4-panel grid and V2 simple cartoon style
+        layout_rules = "A 4-panel comic strip, divided into a 2x2 grid of 4 separate square panels in one single image"
+        quality_boost = "childrens coloring book style, extremely simple flat vector art, Peanuts comic style, simple dots for eyes, solid colors, NO shading, NO realism, 2d cartoon graphic"
+        negative_rules = "NO deformed eyes, NO bad anatomy, NO mutant, NO weird faces, characters MUST NOT share hair styles"
+        master_style = f"{layout_rules}. {quality_boost}. {negative_rules}."
+        
+        clean_prompt = f"{master_style} Narrative: " + prompt.split("Panel")[0].strip()[:150]
         print(f"Generating image: {clean_prompt}...")
         
         for attempt in range(retries):

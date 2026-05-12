@@ -9,54 +9,11 @@ class VideoEngine:
         os.makedirs(output_dir, exist_ok=True)
 
     def add_text_to_image(self, image_path, text, output_path):
-        # Open the image
-        img = Image.open(image_path)
-        draw = ImageDraw.Draw(img)
-        width, height = img.size
-        
-        # Use a punchy comic-style font (Roman script)
-        font_paths = [
-            "C:\\Windows\\Fonts\\arialbd.ttf",
-            "C:\\Windows\\Fonts\\impact.ttf",
-            "hindi_font.ttf"
-        ]
-        
-        font = None
-        for path in font_paths:
-            if os.path.exists(path):
-                font = ImageFont.truetype(path, 45)
-                break
-        
-        if not font:
-            font = ImageFont.load_default()
-
-        # Wrap text
-        wrapper = textwrap.TextWrapper(width=40)
-        lines = wrapper.wrap(text=text)
-        
-        # Draw a semi-transparent background box for the text
-        margin = 20
-        line_height = 50
-        box_height = len(lines) * line_height + 40
-        
-        # Position at the bottom
-        shape = [margin, height - box_height - margin, width - margin, height - margin]
-        draw.rectangle(shape, fill=(0, 0, 0, 180)) # Black box with transparency
-        
-        # Draw text
-        y_text = height - box_height
-        for line in lines:
-            # Use textbbox for centering (available in newer Pillow)
-            try:
-                left, top, right, bottom = draw.textbbox((0, 0), line, font=font)
-                text_width = right - left
-            except:
-                text_width = 0 # Fallback
-            
-            draw.text(((width - text_width) / 2, y_text), line, font=font, fill="white")
-            y_text += line_height
-            
-        img.save(output_path)
+        # We no longer apply manual text overlay.
+        # Just copy the image directly or return the path.
+        import shutil
+        if image_path != output_path:
+            shutil.copy(image_path, output_path)
         return output_path
 
     def compose_video(self, scenes, output_filename):

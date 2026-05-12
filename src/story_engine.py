@@ -29,7 +29,12 @@ class StoryEngine:
         RULES:
         1. 'narration': The AI narrator explaining the scene in Hinglish (Roman script).
         2. 'dialogue': The exact words characters say in Hinglish (Roman script).
-        3. 'image_prompt': Technical English description for a 4-panel comic grid.
+        3. 'image_prompt': Technical English description for a scene. 
+        
+        CRITICAL CHARACTER & HAIR CONSISTENCY:
+        Every single 'image_prompt' MUST include these exact character descriptions if they appear in the scene to prevent blending:
+        - Andy: "A young boy named Andy with short CURLY BROWN hair, round glasses, and a white shirt."
+        - Mona: "A young girl named Mona with short STRAIGHT BLACK hair and a pink striped shirt."
         
         Return exactly 15 scenes in JSON format.
         """
