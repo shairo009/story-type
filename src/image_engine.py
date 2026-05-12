@@ -1,35 +1,50 @@
 import os
-import urllib.parse
+import requests
 import time
 import random
-import subprocess
+import urllib.parse
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class ImageEngine:
     def __init__(self):
-        self.base_url = "https://pollinations.ai/p/"
+        self.hf_token = os.getenv("HF_TOKEN")
+        self.hf_url = "https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-schnell"
 
     def generate_image(self, prompt, output_path):
-        print(f"Generating image via Playwright (Ultra Stealth Mode)...")
+        print(f"Generating image for: {prompt[:50]}...")
         
+        # Try Hugging Face First
+        if self.hf_token:
+            print("Trying Hugging Face (FLUX.1)...")
+            try:
+                headers = {"Authorization": f"Bearer {self.hf_token}"}
+                response = requests.post(self.hf_url, headers=headers, json={"inputs": prompt}, timeout=60)
+                if response.status_code == 200:
+                    with open(output_path, "wb") as f:
+                        f.write(response.content)
+                    print("Success via HF!")
+                    return output_path
+                else:
+                    print(f"HF Failed ({response.status_code}). Trying Pollinations...")
+            except Exception as e:
+                print(f"HF Exception: {e}")
+
+        # Fallback to Pollinations (Free, no key)
         try:
-            clean_prompt = prompt.split("Panel")[0].strip()[:100]
-            encoded_prompt = urllib.parse.quote(clean_prompt)
+            print("Using Pollinations.ai...")
+            encoded = urllib.parse.quote(prompt)
             seed = random.randint(1, 99999)
-            url = f"{self.base_url}{encoded_prompt}?width=720&height=1280&model=flux&seed={seed}"
-            
-            # Use PowerShell to download the file (Windows native, harder to block)
-            ps_command = f'Invoke-WebRequest -Uri "{url}" -OutFile "{output_path}" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"'
-            
-            subprocess.run(["powershell", "-Command", ps_command], capture_output=True)
-            
-            if os.path.exists(output_path) and os.path.getsize(output_path) > 15000:
-                print(f"Image saved via PowerShell: {output_path}")
-                time.sleep(10) # Cool-down
+            # Using turbo for faster results
+            url = f"https://image.pollinations.ai/prompt/{encoded}?width=720&height=1280&model=flux&seed={seed}&nologo=true"
+            r = requests.get(url, timeout=60)
+            if r.status_code == 200:
+                with open(output_path, "wb") as f:
+                    f.write(r.content)
+                print("Success via Pollinations!")
                 return output_path
-            else:
-                print(f"PowerShell download failed or file too small.")
-                return None
-                
         except Exception as e:
-            print(f"Error: {e}")
-            return None
+            print(f"Pollinations Error: {e}")
+
+        return None
