@@ -1,4 +1,5 @@
 import os
+import sys
 import time
 from datetime import datetime
 from src.story_engine import StoryEngine
@@ -17,7 +18,7 @@ async def main():
     
     if not story_data or "scenes" not in story_data:
         print("Failed to generate story.")
-        return
+        sys.exit(1)
 
     print(f"Title: {story_data.get('title', 'AI Story')}")
     scenes = story_data["scenes"]
@@ -64,6 +65,7 @@ async def main():
         print(f"--- SUCCESS! Video created: outputs/{output_filename} ---")
     else:
         print("Error: No scenes were successfully processed.")
+        sys.exit(1)
 
 if __name__ == "__main__":
     asyncio.run(main())
