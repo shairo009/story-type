@@ -2,9 +2,8 @@ name: Daily YouTube Upload
 
 on:
   schedule:
-    # Run every 4 hours (6 times a day)
     - cron: '0 */4 * * *'
-  workflow_dispatch: # Allow manual trigger
+  workflow_dispatch:
 
 jobs:
   upload:
@@ -40,3 +39,12 @@ jobs:
           echo "$TOKEN_JSON" > token.json
           echo "$CLIENT_SECRETS_JSON" > client_secrets.json
           python main.py
+
+      - name: Upload video as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: comic-video-${{ github.run_number }}
+          path: outputs/*.mp4
+          retention-days: 7
+          if-no-files-found: warn
