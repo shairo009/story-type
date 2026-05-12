@@ -38,11 +38,12 @@ class StoryEngine:
 Your task is to generate a 5-scene HINGLISH webcomic script.
 
 ### PRODUCTION SETTINGS:
-- STYLE: Hand-drawn minimalist webcomic grid.
+- STYLE: Hand-drawn webcomic.
 - CHARACTER ANCHOR 1: MONA - Short black hair, pink shirt.
-- CHARACTER ANCHOR 2: ANDY - Brown curly hair, glasses, white shirt, red tie.
+- CHARACTER ANCHOR 2: ANDY - Brown curly hair, white shirt, red tie.
 
-### OUTPUT FORMAT:
+### DIRECTION:
+Keep 'image_prompt' under 150 characters. Describe the 4-panel grid simply.
 {
   "title": "Hinglish Title",
   "scenes": [
@@ -77,75 +78,58 @@ Your task is to generate a 5-scene HINGLISH webcomic script.
                         break
                 
                 if not content:
-                    print("Error: No text block found in API response.")
-                    return None
-                # Clean markdown and find the JSON object
-                import re
+                    print("Error: No text block found in API response. Trying fallback...")
+                    return self.fallback_generate_story(topic)
                 
-                def clean_json_string(s):
-                    # Remove thinking blocks if any
-                    s = re.sub(r'<thinking>.*?</thinking>', '', s, flags=re.DOTALL)
-                    # Find the first { and last }
-                    start = s.find('{')
-                    end = s.rfind('}')
-                    if start != -1 and end != -1:
-                        s = s[start:end+1]
-                    
-                    # Fix common malformations in arrays of objects
-                    s = s.replace('"},"{', '"},{"')
-                    s = s.replace('"}, "{', '"},{"')
-                    s = s.replace('"} "{', '"},{"')
-                    s = s.replace('"},"', '"},{"')
-                    
-                    # Fix the specific "{" issue
-                    s = s.replace('","{', '",{"')
-                    s = s.replace('"],"{"', '":[{"')
-                    
-                    # General cleanup: remove extra quotes around objects
-                    s = re.sub(r'("\s*\{)', '{', s)
-                    s = re.sub(r'(\}\s*")', '}', s)
-                    
-                    return s
-
-                content = clean_json_string(content)
-                
-                try:
-                    # Try to parse as JSON first
-                    data = json.loads(content)
-                    if "scenes" in data:
-                        return data
-                    # If it's a list, wrap it
-                    if isinstance(data, list):
-                        return {"title": "AI Story", "scenes": data}
-                except json.JSONDecodeError as e:
-                    print(f"JSON still invalid after cleaning: {e}")
-                
-                # Last ditch effort: try to fix with a very aggressive regex
-                try:
-                    # Extract everything that looks like a narration/image_prompt pair
-                    narrations = re.findall(r'"narration":\s*"(.*?)"', content)
-                    prompts = re.findall(r'"image_prompt":\s*"(.*?)"', content)
-                    title_match = re.search(r'"title":\s*"(.*?)"', content)
-                    title = title_match.group(1) if title_match else "AI Story"
-                    
-                    scenes = []
-                    for n, p in zip(narrations, prompts):
-                        scenes.append({"narration": n, "image_prompt": p})
-                    
-                    if len(scenes) > 0:
-                        print(f"Recovered {len(scenes)} scenes via regex.")
-                        return {"title": title, "scenes": scenes}
-                except Exception as ex:
-                    print(f"Regex recovery failed: {ex}")
-                
-                raise ValueError("Could not extract scenes from model output.")
+                return self.parse_and_clean(content)
             else:
-                print(f"Error from OpenCode: {response.status_code} - {response.text}")
-                return None
+                print(f"Error from OpenCode: {response.status_code} - {response.text}. Using Fallback...")
+                return self.fallback_generate_story(topic)
         except Exception as e:
-            print(f"Exception during story generation: {e}")
-            print(f"Raw content was: {content}")
-            return None
+            print(f"Exception during story generation: {e}. Using Fallback...")
+            return self.fallback_generate_story(topic)
+
+    def fallback_generate_story(self, topic):
+        print("Story Fallback: Pollinations AI...")
+        try:
+            import urllib.parse
+            prompt = f"Write a 5-scene Hinglish comic story about {topic}. Use JSON: " + \
+                     "{\"title\": \"Title\", \"scenes\": [{\"narration\": \"Hinglish\", \"dialogue\": \"Hinglish\", \"image_prompt\": \"English description\"}]}"
+            url = f"https://text.pollinations.ai/{urllib.parse.quote(prompt)}"
+            r = requests.get(url, timeout=60)
+            if r.status_code == 200:
+                return self.parse_and_clean(r.text)
+        except Exception as e:
+            print(f"Final Fallback Failed: {e}")
+        return None
+
+    def parse_and_clean(self, content):
+        import re
+        # Clean markdown and find the JSON object
+        def clean_json_string(s):
+            s = re.sub(r'<thinking>.*?</thinking>', '', s, flags=re.DOTALL)
+            start = s.find('{')
+            end = s.rfind('}')
+            if start != -1 and end != -1:
+                s = s[start:end+1]
+            s = s.replace('"},"{', '"},{"').replace('"}, "{', '"},{"').replace('"} "{', '"},{"')
+            return s
+
+        content = clean_json_string(content)
+        try:
+            data = json.loads(content)
+            if "scenes" in data: return data
+            if isinstance(data, list): return {"title": "AI Story", "scenes": data}
+        except:
+            # Aggressive regex recovery
+            narrations = re.findall(r'"narration":\s*"(.*?)"', content)
+            prompts = re.findall(r'"image_prompt":\s*"(.*?)"', content)
+            dialogues = re.findall(r'"dialogue":\s*"(.*?)"', content)
+            scenes = []
+            for n, d, p in zip(narrations, dialogues, prompts):
+                scenes.append({"narration": n, "dialogue": d, "image_prompt": p})
+            if scenes: return {"title": "AI Story", "scenes": scenes}
+        return None
 
 if __name__ == "__main__":
     # Test run

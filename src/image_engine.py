@@ -1,56 +1,35 @@
 import os
+import urllib.parse
 import time
-from dotenv import load_dotenv
-from huggingface_hub import InferenceClient
-
-load_dotenv()
+import random
+import subprocess
 
 class ImageEngine:
-    def __init__(self, token=None):
-        self.token = token or os.getenv("HF_TOKEN")
-        if not self.token:
-            raise ValueError("HF_TOKEN not found in environment variables.")
-        
-        # New InferenceClient is the recommended way to use HF APIs in 2025
-        self.client = InferenceClient(api_key=self.token)
-        
-        # List of models to try in order of preference
-        self.models = [
-            "black-forest-labs/FLUX.1-schnell",
-            "stabilityai/stable-diffusion-xl-base-1.0",
-            "runwayml/stable-diffusion-v1-5"
-        ]
+    def __init__(self):
+        self.base_url = "https://pollinations.ai/p/"
 
-    def generate_image(self, prompt, filename, model_index=0):
-        if model_index >= len(self.models):
-            print("All models failed for this prompt.")
-            return False
-
-        model_id = self.models[model_index]
-        print(f"Generating image using {model_id} via InferenceClient...")
+    def generate_image(self, prompt, output_path):
+        print(f"Generating image via Playwright (Ultra Stealth Mode)...")
         
         try:
-            # Using the specific task method for text-to-image
-            image = self.client.text_to_image(prompt, model=model_id)
-            image.save(filename)
-            return True
+            clean_prompt = prompt.split("Panel")[0].strip()[:100]
+            encoded_prompt = urllib.parse.quote(clean_prompt)
+            seed = random.randint(1, 99999)
+            url = f"{self.base_url}{encoded_prompt}?width=720&height=1280&model=flux&seed={seed}"
+            
+            # Use PowerShell to download the file (Windows native, harder to block)
+            ps_command = f'Invoke-WebRequest -Uri "{url}" -OutFile "{output_path}" -UserAgent "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"'
+            
+            subprocess.run(["powershell", "-Command", ps_command], capture_output=True)
+            
+            if os.path.exists(output_path) and os.path.getsize(output_path) > 15000:
+                print(f"Image saved via PowerShell: {output_path}")
+                time.sleep(10) # Cool-down
+                return output_path
+            else:
+                print(f"PowerShell download failed or file too small.")
+                return None
                 
         except Exception as e:
-            print(f"Error from {model_id}: {e}")
-            if "503" in str(e) or "loading" in str(e).lower():
-                print(f"Model {model_id} is loading. Waiting 20 seconds...")
-                time.sleep(20)
-                return self.generate_image(prompt, filename, model_index)
-            else:
-                # Try next model
-                return self.generate_image(prompt, filename, model_index + 1)
-
-if __name__ == "__main__":
-    # Test run
-    try:
-        engine = ImageEngine()
-        success = engine.generate_image("a cute robot eating a pizza, cinematic lighting", "test_robot.png")
-        if success:
-            print("Image generated successfully!")
-    except Exception as e:
-        print(f"Test failed: {e}")
+            print(f"Error: {e}")
+            return None

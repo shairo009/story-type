@@ -79,8 +79,11 @@ async def run_pipeline():
         print(f"Error in pipeline: {e}")
     finally:
         # Clean up assets (keep video)
-        if os.path.exists(temp_dir):
-            shutil.rmtree(temp_dir)
+        try:
+            if os.path.exists(temp_dir):
+                shutil.rmtree(temp_dir)
+        except:
+            print("Warning: Could not clean up all temp files. They will be removed next time.")
 
 if __name__ == "__main__":
     asyncio.run(run_pipeline())

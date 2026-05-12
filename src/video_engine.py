@@ -76,6 +76,7 @@ class VideoEngine:
             clip = ImageClip(temp_image_with_text).set_duration(audio.duration)
             clip = clip.set_audio(audio)
             clips.append(clip)
+            audio.close() # Close audio file handle
             
         # Concatenate all scenes
         final_video = concatenate_videoclips(clips, method="compose")
@@ -83,6 +84,11 @@ class VideoEngine:
         output_path = os.path.join(self.output_dir, output_filename)
         # Write to file (using lower bitrate for faster processing on local)
         final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+        
+        # Explicitly close clips to release file handles
+        for clip in clips:
+            clip.close()
+        final_video.close()
         
         # Cleanup temp images
         for i in range(len(scenes)):
