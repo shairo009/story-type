@@ -1,89 +1,69 @@
-import asyncio
 import os
-import shutil
-import random
+import time
 from datetime import datetime
-from dotenv import load_dotenv
-
 from src.story_engine import StoryEngine
 from src.image_engine import ImageEngine
 from src.audio_engine import AudioEngine
 from src.video_engine import VideoEngine
-from src.uploader import YouTubeUploader
+import asyncio
 
-load_dotenv()
+async def main():
+    print("--- 1-Minute Comic Production Starting ---")
+    
+    # 1. Generate Story (15 scenes for ~60 seconds)
+    story_engine = StoryEngine()
+    topic = "The Mystery of Time Travel" # default topic
+    story_data = story_engine.generate_story(topic)
+    
+    if not story_data or "scenes" not in story_data:
+        print("Failed to generate story.")
+        return
 
-# Topics to choose from automatically
-TOPICS = [
-    "Mona and Andy find a time machine", "Mona and Andy explore a haunted school", 
-    "Mona and Andy get lost in a dinosaur forest", "Mona and Andy discover a secret alien base",
-    "Mona and Andy try to bake a giant cake", "Mona and Andy find a magic portal in the attic"
-]
+    print(f"Title: {story_data.get('title', 'AI Story')}")
+    scenes = story_data["scenes"]
+    print(f"Scenes to process: {len(scenes)}")
 
-async def run_pipeline():
-    # Setup directories
+    # 2. Setup Engines
+    image_engine = ImageEngine()
+    audio_engine = AudioEngine()
+    video_engine = VideoEngine()
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     temp_dir = f"temp_{timestamp}"
     os.makedirs(temp_dir, exist_ok=True)
-    
-    try:
-        # 1. Generate Story
-        print("--- Step 1: Generating Story ---")
-        story_engine = StoryEngine()
-        topic = random.choice(TOPICS)
-        story_data = story_engine.generate_story(topic)
-        if not story_data:
-            return
-        
-        title = story_data.get("title", "AI Story")
-        print(f"Title: {title}")
 
-        # 2. Generate Assets for each scene
-        print("--- Step 2: Generating Assets ---")
-        image_engine = ImageEngine()
-        audio_engine = AudioEngine()
+    processed_scenes = []
+
+    # 3. Process each scene
+    for i, scene in enumerate(scenes):
+        print(f"Processing Scene {i+1}/{len(scenes)}...")
         
-        scenes_data = []
-        for i, scene in enumerate(story_data["scenes"]):
-            print(f"Processing Scene {i+1}...")
-            img_path = os.path.join(temp_dir, f"scene_{i}.png")
-            aud_path = os.path.join(temp_dir, f"scene_{i}.mp3")
-            
-            # Generate Image
-            image_engine.generate_image(scene["image_prompt"], img_path)
-            
-            # Generate Audio
-            await audio_engine.generate_audio(scene["narration"], aud_path)
-            
-            scenes_data.append({
-                "image_path": img_path,
-                "audio_path": aud_path,
-                "narration": scene.get("dialogue", scene["narration"]) # Show dialogue in image
+        img_path = os.path.join(temp_dir, f"scene_{i}.png")
+        audio_path = os.path.join(temp_dir, f"scene_{i}.mp3")
+        
+        # Image Generation
+        image_engine.generate_image(scene["image_prompt"], img_path)
+        
+        # Audio Generation
+        await audio_engine.generate_audio(scene["narration"], audio_path)
+        
+        if os.path.exists(img_path) and os.path.exists(audio_path):
+            processed_scenes.append({
+                'image_path': img_path,
+                'audio_path': audio_path,
+                'narration': scene.get('dialogue', '')
             })
+        else:
+            print(f"Warning: Missing assets for scene {i+1}. Skipping.")
 
-        # 3. Compose Video
-        print("--- Step 3: Composing Video ---")
-        video_engine = VideoEngine()
-        video_path_filename = f"{title.replace(' ', '_')}_{timestamp}.mp4"
-        video_path = video_engine.compose_video(scenes_data, video_path_filename)
-
-        # 4. Upload to YouTube
-        print("--- Step 4: Uploading to YouTube ---")
-        uploader = YouTubeUploader()
-        description = f"AI generated story about {topic}.\n\n#shorts #ai #storytelling #storytype"
-        uploader.upload_video(video_path, f"{title} | AI Story", description)
-
-        print("--- Pipeline Complete! ---")
-
-    except Exception as e:
-        print(f"Error in pipeline: {e}")
-    finally:
-        # Clean up assets (keep video)
-        try:
-            if os.path.exists(temp_dir):
-                shutil.rmtree(temp_dir)
-        except:
-            print("Warning: Could not clean up all temp files. They will be removed next time.")
+    # 4. Compose Video
+    if processed_scenes:
+        print("--- Step 3: Composing 1-Minute Video ---")
+        output_filename = f"comic_long_{timestamp}.mp4"
+        video_engine.compose_video(processed_scenes, output_filename)
+        print(f"--- SUCCESS! Video created: outputs/{output_filename} ---")
+    else:
+        print("Error: No scenes were successfully processed.")
 
 if __name__ == "__main__":
-    asyncio.run(run_pipeline())
+    asyncio.run(main())

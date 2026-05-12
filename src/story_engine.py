@@ -24,14 +24,14 @@ class StoryEngine:
         }
         
         prompt = f"""
-        Write a short 5-scene Hinglish COMIC story about {topic}.
+        Write a long 15-scene Hinglish COMIC story about {topic}.
         
         RULES:
-        1. 'narration': The AI narrator explaining the scene in Hinglish (Roman script, e.g., 'Dono ne gufa dekhi').
-        2. 'dialogue': The exact words characters say in Hinglish (Roman script) to be written IN the image.
+        1. 'narration': The AI narrator explaining the scene in Hinglish (Roman script).
+        2. 'dialogue': The exact words characters say in Hinglish (Roman script).
         3. 'image_prompt': Technical English description for a 4-panel comic grid.
         
-        Return exactly 5 scenes in JSON format.
+        Return exactly 15 scenes in JSON format.
         """
         
         system_prompt = """You are a Professional Comic Production Director.

@@ -72,18 +72,33 @@ class VideoEngine:
             self.add_text_to_image(image_path, narration, temp_image_with_text)
             
             audio = AudioFileClip(audio_path)
-            # Create clip with the duration of the audio
-            clip = ImageClip(temp_image_with_text).set_duration(audio.duration)
+            # Ensure dimensions are even (H.264 requirement)
+            img_clip = ImageClip(temp_image_with_text)
+            w, h = img_clip.size
+            if w % 2 != 0: w -= 1
+            if h % 2 != 0: h -= 1
+            img_clip = img_clip.resize(newsize=(w, h))
+            
+            clip = img_clip.set_duration(audio.duration)
             clip = clip.set_audio(audio)
             clips.append(clip)
-            audio.close() # Close audio file handle
+            # audio.close() - Moved to after render
             
         # Concatenate all scenes
         final_video = concatenate_videoclips(clips, method="compose")
         
         output_path = os.path.join(self.output_dir, output_filename)
         # Write to file (using lower bitrate for faster processing on local)
-        final_video.write_videofile(output_path, fps=24, codec="libx264", audio_codec="aac")
+        # Write to file with maximum compatibility (YUV420P is essential for Windows/QuickTime)
+        final_video.write_videofile(
+            output_path, 
+            fps=24, 
+            codec="libx264", 
+            audio_codec="aac",
+            temp_audiofile='temp-audio.m4a',
+            remove_temp=True,
+            ffmpeg_params=["-pix_fmt", "yuv420p", "-level", "3.0"]
+        )
         
         # Explicitly close clips to release file handles
         for clip in clips:
