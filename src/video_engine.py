@@ -1,5 +1,5 @@
 import os
-from moviepy.editor import ImageClip, AudioFileClip, concatenate_videoclips
+from moviepy import ImageClip, AudioFileClip, concatenate_videoclips
 from PIL import Image, ImageDraw, ImageFont
 import textwrap
 
@@ -34,19 +34,16 @@ class VideoEngine:
             w, h = img_clip.size
             if w % 2 != 0: w -= 1
             if h % 2 != 0: h -= 1
-            img_clip = img_clip.resize(newsize=(w, h))
+            img_clip = img_clip.resized(newsize=(w, h))
             
-            clip = img_clip.set_duration(audio.duration)
-            clip = clip.set_audio(audio)
+            clip = img_clip.with_duration(audio.duration)
+            clip = clip.with_audio(audio)
             clips.append(clip)
-            # audio.close() - Moved to after render
             
         # Concatenate all scenes
         final_video = concatenate_videoclips(clips, method="compose")
         
         output_path = os.path.join(self.output_dir, output_filename)
-        # Write to file (using lower bitrate for faster processing on local)
-        # Write to file with maximum compatibility (YUV420P is essential for Windows/QuickTime)
         final_video.write_videofile(
             output_path, 
             fps=24, 
