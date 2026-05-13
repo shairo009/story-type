@@ -8,66 +8,51 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class ImageEngine:
     def __init__(self):
         self.last_image_path = None
 
     def is_valid_image(self, data):
-        if len(data) < 2000: return False
+        if len(data) < 5000:
+            return False
         return data.startswith(b'\xff\xd8') or data.startswith(b'\x89PNG')
 
-    def generate_image(self, prompt, output_path, retries=3):
-        # Apply the Master Style with strict layout rules for a 2x2 4-panel grid and V2 simple cartoon style
+    def generate_image(self, prompt, output_path, retries=4):
         layout_rules = "A 4-panel comic strip, divided into a 2x2 grid of 4 separate square panels in one single image"
         quality_boost = "childrens coloring book style, extremely simple flat vector art, Peanuts comic style, simple dots for eyes, solid colors, NO shading, NO realism, 2d cartoon graphic"
         negative_rules = "NO deformed eyes, NO bad anatomy, NO mutant, NO weird faces, characters MUST NOT share hair styles"
         master_style = f"{layout_rules}. {quality_boost}. {negative_rules}."
-        
-        clean_prompt = f"{master_style} Narrative: " + prompt.split("Panel")[0].strip()[:150]
-        print(f"Generating image: {clean_prompt}...")
-        
-        for attempt in range(retries):
-            # Try Hercai V3 Direct
-            try:
-                url = f"https://hercai.onrender.com/v3/text2image?prompt={urllib.parse.quote(clean_prompt)}"
-                r = requests.get(url, timeout=30)
-                if r.status_code == 200:
-                    img_url = r.json().get("url")
-                    if img_url:
-                        # Use urllib.request for the actual image download
-                        headers = {'User-Agent': 'Mozilla/5.0'}
-                        req = urllib.request.Request(img_url, headers=headers)
-                        with urllib.request.urlopen(req) as response:
-                            data = response.read()
-                            if self.is_valid_image(data):
-                                with open(output_path, "wb") as f: f.write(data)
-                                self.last_image_path = output_path
-                                print(f"Success via Hercai!")
-                                return output_path
-            except Exception: pass
 
-            # Try Pollinations V1 Direct
+        clean_prompt = f"{master_style} Narrative: " + prompt.split("Panel")[0].strip()[:150]
+        print(f"Generating image (prompt length={len(clean_prompt)})...")
+
+        for attempt in range(retries):
+            seed = random.randint(1, 9999999)
             try:
-                seed = random.randint(1, 1000000)
-                url = f"https://image.pollinations.ai/prompt/{urllib.parse.quote(clean_prompt)}?width=720&height=1280&seed={seed}&nologo=true"
+                url = (
+                    f"https://image.pollinations.ai/prompt/"
+                    f"{urllib.parse.quote(clean_prompt)}"
+                    f"?width=720&height=1280&seed={seed}&nologo=true"
+                )
                 headers = {'User-Agent': 'Mozilla/5.0'}
                 req = urllib.request.Request(url, headers=headers)
-                with urllib.request.urlopen(req) as response:
+                with urllib.request.urlopen(req, timeout=60) as response:
                     data = response.read()
                     if self.is_valid_image(data):
-                        with open(output_path, "wb") as f: f.write(data)
+                        with open(output_path, "wb") as f:
+                            f.write(data)
                         self.last_image_path = output_path
-                        print(f"Success via Pollinations!")
+                        print(f"  Image OK via Pollinations (attempt {attempt+1}, seed={seed}, {len(data)//1024}KB)")
                         return output_path
-            except Exception: pass
-            
-            time.sleep(2)
+                    else:
+                        print(f"  Attempt {attempt+1}: Pollinations returned small/invalid data ({len(data)} bytes), retrying...")
+            except Exception as ex:
+                print(f"  Attempt {attempt+1}: Pollinations error — {ex}")
 
-        # Fallback to last successful image
-        if self.last_image_path and os.path.exists(self.last_image_path):
-            print("Reusing last valid image as fallback.")
-            import shutil
-            shutil.copy(self.last_image_path, output_path)
-            return output_path
-        
+            wait = 3 * (attempt + 1)
+            print(f"  Waiting {wait}s before retry...")
+            time.sleep(wait)
+
+        print(f"  ERROR: All {retries} attempts failed for this scene. No fallback used.")
         return None
