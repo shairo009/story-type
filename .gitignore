@@ -5,6 +5,7 @@ src/__pycache__/
 *.json
 !client_secrets.json.example
 !token.json.example
+!video_history.json
 debug_output.txt
 test_image_keys.png
 openrouter_test.json
