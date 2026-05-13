@@ -53,11 +53,11 @@ jobs:
       - name: Refresh TOKEN_JSON secret
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           if [ -f token.json ]; then
-            TOKEN_CONTENT=$(python3 -c "import json,sys; print(open('token.json').read().strip())")
-            PUBLIC_KEY_JSON=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            TOKEN_CONTENT=$(python3 -c "import sys; print(open('token.json').read().strip())")
+            PUBLIC_KEY_JSON=$(curl -s -H "Authorization: token $GH_PAT" \
               "https://api.github.com/repos/${{ github.repository }}/actions/secrets/public-key")
             KEY_ID=$(echo "$PUBLIC_KEY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['key_id'])")
             KEY=$(echo "$PUBLIC_KEY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['key'])")
@@ -66,12 +66,11 @@ import sys
 from base64 import b64encode
 from nacl import encoding, public
 pub_key = public.PublicKey(sys.argv[1].encode(), encoding.Base64Encoder())
-sealed = public.SealedBox(pub_key)
-enc = sealed.encrypt(sys.argv[2].encode())
+enc = public.SealedBox(pub_key).encrypt(sys.argv[2].encode())
 print(b64encode(enc).decode())
 " "$KEY" "$TOKEN_CONTENT")
             curl -s -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
+              -H "Authorization: token $GH_PAT" \
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/${{ github.repository }}/actions/secrets/TOKEN_JSON" \
               -d "{\"encrypted_value\":\"$ENCRYPTED\",\"key_id\":\"$KEY_ID\"}"
@@ -81,11 +80,11 @@ print(b64encode(enc).decode())
       - name: Save updated video history
         if: success()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_PERSONAL_ACCESS_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           if [ -f video_history.json ]; then
             CONTENT=$(base64 -w 0 video_history.json)
-            SHA=$(curl -s -H "Authorization: token $GH_TOKEN" \
+            SHA=$(curl -s -H "Authorization: token $GH_PAT" \
               "https://api.github.com/repos/${{ github.repository }}/contents/video_history.json" \
               | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))")
             PAYLOAD="{\"message\":\"chore: update video history [skip ci]\",\"content\":\"$CONTENT\""
@@ -94,7 +93,7 @@ print(b64encode(enc).decode())
             fi
             PAYLOAD="$PAYLOAD}"
             curl -s -X PUT \
-              -H "Authorization: token $GH_TOKEN" \
+              -H "Authorization: token $GH_PAT" \
               -H "Content-Type: application/json" \
               "https://api.github.com/repos/${{ github.repository }}/contents/video_history.json" \
               -d "$PAYLOAD"
