@@ -9,6 +9,7 @@ from src.audio_engine import AudioEngine
 from src.video_engine import VideoEngine
 from src.uploader import YouTubeUploader
 import asyncio
+import shutil
 
 HISTORY_FILE = "video_history.json"
 
@@ -49,7 +50,10 @@ TOPIC_POOL = [
 def load_history():
     if os.path.exists(HISTORY_FILE):
         with open(HISTORY_FILE, "r") as f:
-            return json.load(f)
+            try:
+                return json.load(f)
+            except:
+                return {"videos": []}
     return {"videos": []}
 
 
@@ -72,8 +76,9 @@ async def main():
 
     history = load_history()
     topic = pick_topic(history)
-    print(f"Selected topic: {topic} (from history of {len(history[chr(39)]videos[chr(39)])} videos)")
+    print(f"Selected topic: {topic} (from history of {len(history['videos'])} videos)")
 
+    # 1. Generate Story
     story_engine = StoryEngine()
     story_data = story_engine.generate_story(topic)
 
@@ -86,9 +91,11 @@ async def main():
     scenes = story_data["scenes"]
     print(f"Scenes to process: {len(scenes)}")
 
+    # 2. Setup Engines
     image_engine = ImageEngine()
     audio_engine = AudioEngine()
     video_engine = VideoEngine()
+    uploader = YouTubeUploader()
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     temp_dir = f"temp_{timestamp}"
@@ -96,12 +103,14 @@ async def main():
 
     processed_scenes = []
 
+    # 3. Process each scene
     for i, scene in enumerate(scenes):
         print(f"Processing Scene {i+1}/{len(scenes)}...")
 
         img_path = os.path.join(temp_dir, f"scene_{i}.png")
         audio_path = os.path.join(temp_dir, f"scene_{i}.mp3")
 
+        # Generate Image & Audio
         image_engine.generate_image(scene["image_prompt"], img_path)
         await audio_engine.generate_audio(scene["narration"], audio_path)
 
@@ -118,24 +127,19 @@ async def main():
         print("Error: No scenes were successfully processed.")
         sys.exit(1)
 
-    print("--- Step 3: Composing Video ---")
+    # 4. Compose Video
+    print("--- Step 3: Composing 1-Minute Video ---")
     output_filename = f"comic_long_{timestamp}.mp4"
     video_path = video_engine.compose_video(processed_scenes, output_filename)
-    print(f"--- Video created: {video_path} ---")
+    print(f"--- SUCCESS! Video created: {video_path} ---")
 
+    # 5. Upload to YouTube
     print("--- Step 4: Uploading to YouTube ---")
     video_id = None
     try:
-        uploader = YouTubeUploader(
-            secrets_file="client_secrets.json",
-            token_file="token.json"
-        )
         description = (
-            f"AI-generated Hinglish comic story: {title}
-
-"
-            "Made with AI story, images, audio, and video all generated automatically.
-"
+            f"AI-generated Hinglish comic story: {title}\n\n"
+            "Made with AI story, images, audio, and video all generated automatically.\n"
             "#shorts #ai #comic #hinglish #story"
         )
         video_id = uploader.upload_video(
@@ -145,21 +149,30 @@ async def main():
             tags=["shorts", "ai", "comic", "hinglish", "story", "animation"]
         )
         print(f"--- SUCCESS! Uploaded to YouTube: https://youtu.be/{video_id} ---")
+        
+        # 6. Cleanup - ONLY delete the video file after successful upload
+        # (Keeping source materials in temp_dir as requested)
+        if os.path.exists(video_path):
+            os.remove(video_path)
+            print(f"Deleted local video file: {video_path}")
+            
     except Exception as e:
         print(f"YouTube upload failed: {e}")
         print("Video is saved locally at:", video_path)
-        sys.exit(1)
-
-    history["videos"].append({
-        "topic": topic,
-        "title": title,
-        "video_id": video_id,
-        "uploaded_at": datetime.now().isoformat(),
-        "youtube_url": f"https://youtu.be/{video_id}"
-    })
-    save_history(history)
-    print(f"--- History updated. Total videos: {len(history[chr(39)]videos[chr(39)])} ---")
-
+        # We don't delete if upload failed
+    
+    # Update History regardless of upload success (or only if success?)
+    # Usually better if success.
+    if video_id:
+        history["videos"].append({
+            "topic": topic,
+            "title": title,
+            "video_id": video_id,
+            "uploaded_at": datetime.now().isoformat(),
+            "youtube_url": f"https://youtu.be/{video_id}"
+        })
+        save_history(history)
+        print(f"--- History updated. Total videos: {len(history['videos'])} ---")
 
 if __name__ == "__main__":
     asyncio.run(main())
