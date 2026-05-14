@@ -1,15 +1,45 @@
 name: Daily YouTube Upload
+
 on:
-  workflow_dispatch:
-  jobs:
-    upload:
-        runs-on: ubuntu-latest
-            steps:
-                  - uses: actions/checkout@v4
-                        - run: python main.py
-                                env:
-                                          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-                                                    PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
-                                                              TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
-                                                                        CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
-                                                                        
+  schedule:
+    # Run every 4 hours (6 times a day)
+    - cron: '0 */4 * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y imagemagick ffmpeg
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Configure ImageMagick
+        run: |
+          # Fix for ImageMagick security policy on Linux
+          sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
+          sudo sed -i 's/rights="none" pattern="LABEL"/rights="read|write" pattern="LABEL"/' /etc/ImageMagick-6/policy.xml
+
+      - name: Run Pipeline
+        env:
+          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
+          OPENCODE_BASE_URL: "https://api.minimax.io/v1"
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
+          CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
+        run: |
+          echo "$TOKEN_JSON" > token.json
+          echo "$CLIENT_SECRETS_JSON" > client_secrets.json
+          python main.py
