@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px; height: 1280px; overflow: hidden;
+    background: #080d1a;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    font-family: 'Segoe UI', sans-serif; color: white;
+    padding: 50px 40px;
+  }
+  .step-header { font-size: 22px; color: {{ primary_color }}; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 30px; }
+  .problem-box {
+    background: #111;
+    border: 3px solid {{ primary_color }};
+    border-radius: 30px; padding: 40px;
+    font-size: 34px; color: white; text-align: center;
+    margin-bottom: 30px; width: 100%; line-height: 1.5;
+  }
+  .problem-box .question { font-size: 50px; font-weight: 900; color: {{ primary_color }}; margin-top: 20px; }
+  .step { 
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border-left: 6px solid {{ secondary_color }};
+    border-radius: 15px; padding: 25px 30px;
+    font-size: 28px; margin-bottom: 15px; line-height: 1.5;
+  }
+  .step .num { 
+    font-size: 22px; font-weight: 700; color: {{ secondary_color }};
+    margin-bottom: 8px; letter-spacing: 2px;
+  }
+  .answer-box {
+    background: {{ primary_color }};
+    border-radius: 25px; padding: 30px 40px;
+    font-size: 42px; font-weight: 900; color: #000;
+    text-align: center; width: 100%; margin-top: 20px;
+    box-shadow: 0 0 40px {{ primary_color }};
+  }
+</style>
+</head>
+<body>
+  <div class="step-header">🧮 Example Solve Karo</div>
+  <div class="problem-box">
+    Sawaal: {{ problem_statement }}
+    <div class="question">{{ problem_question }}</div>
+  </div>
+  {% for step in steps %}
+  <div class="step">
+    <div class="num">STEP {{ loop.index }}</div>
+    {{ step }}
+  </div>
+  {% endfor %}
+  <div class="answer-box">✓ Jawab: {{ answer }}</div>
+</body>
+</html>

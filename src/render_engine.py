@@ -4,57 +4,97 @@ import json
 from playwright.async_api import async_playwright
 from jinja2 import Template
 
+TEMPLATES = {
+    "intro":   "templates/slide_intro.html",
+    "concept": "templates/slide_concept.html",
+    "graph":   "templates/slide_graph.html",
+    "example": "templates/slide_example.html",
+    "summary": "templates/slide_summary.html",
+}
+
 class RenderEngine:
-    def __init__(self, template_path="templates/advanced_3d_math.html"):
-        with open(template_path, "r", encoding="utf-8") as f:
-            self.template_content = f.read()
+    def __init__(self):
+        self.templates = {}
+        for name, path in TEMPLATES.items():
+            with open(path, "r", encoding="utf-8") as f:
+                self.templates[name] = Template(f.read())
         self.output_dir = "temp_frames"
         os.makedirs(self.output_dir, exist_ok=True)
 
-    async def render_lesson(self, lesson_data):
+    async def _screenshot(self, page, html, path, wait=2.5):
+        await page.set_content(html, wait_until="networkidle")
+        await asyncio.sleep(wait)
+        await page.screenshot(path=path, full_page=False)
+        print(f"  Frame saved: {path}")
+
+    async def render_lesson(self, lesson):
+        pc = lesson["primary_color"]
+        sc = lesson["secondary_color"]
+        frame_paths = []
+
         async with async_playwright() as p:
             browser = await p.chromium.launch()
             page = await browser.new_page(viewport={"width": 720, "height": 1280})
-            
-            template = Template(self.template_content)
-            
-            # We render 1 long take or multiple frames. 
-            # For shorts, 1-2 frames with long audio is fine, but we'll do 1 high-quality frame.
-            render_data = {
-                "level": lesson_data["level"],
-                "title": lesson_data["title"],
-                "explanation": lesson_data["explanation"],
-                "equation": lesson_data["equation"],
-                "graph_label": lesson_data["graph_label"],
-                "graph_data": json.dumps(lesson_data["graph_data"]),
-                "primary_color": lesson_data["visual_prompts"]["primary_color"],
-                "secondary_color": lesson_data["visual_prompts"]["secondary_color"]
-            }
-            
-            html = template.render(**render_data)
-            await page.set_content(html)
-            
-            # Wait for Three.js and Chart.js to animate
-            await asyncio.sleep(3)
-            
-            frame_paths = []
-            path = os.path.join(self.output_dir, f"advanced_frame.png")
-            await page.screenshot(path=path)
+
+            # 1. INTRO SLIDE
+            html = self.templates["intro"].render(
+                lesson_num=lesson["lesson_num"],
+                level=lesson["level"],
+                title=lesson["title"],
+                intro_text=lesson["intro_text"],
+                prev_topic=lesson.get("prev_topic", ""),
+                primary_color=pc, secondary_color=sc
+            )
+            path = os.path.join(self.output_dir, "slide_0_intro.png")
+            await self._screenshot(page, html, path, wait=1.5)
+            frame_paths.append(path)
+
+            # 2. CONCEPT SLIDE
+            html = self.templates["concept"].render(
+                topic=lesson["topic"],
+                explanation=lesson["concept_explanation"],
+                equation=lesson["equation"],
+                primary_color=pc, secondary_color=sc
+            )
+            path = os.path.join(self.output_dir, "slide_1_concept.png")
+            await self._screenshot(page, html, path, wait=1.5)
+            frame_paths.append(path)
+
+            # 3. GRAPH SLIDE
+            html = self.templates["graph"].render(
+                graph_label=lesson["graph_label"],
+                graph_type=lesson.get("graph_type", "line"),
+                graph_labels=json.dumps(lesson["graph_labels"]),
+                graph_data=json.dumps(lesson["graph_data"]),
+                key_points=lesson["key_points"],
+                primary_color=pc, secondary_color=sc
+            )
+            path = os.path.join(self.output_dir, "slide_2_graph.png")
+            await self._screenshot(page, html, path, wait=3.0)  # wait for chart.js
+            frame_paths.append(path)
+
+            # 4. EXAMPLE SLIDE
+            html = self.templates["example"].render(
+                problem_statement=lesson["problem_statement"],
+                problem_question=lesson["problem_question"],
+                steps=lesson["steps"],
+                answer=lesson["answer"],
+                primary_color=pc, secondary_color=sc
+            )
+            path = os.path.join(self.output_dir, "slide_3_example.png")
+            await self._screenshot(page, html, path, wait=1.5)
+            frame_paths.append(path)
+
+            # 5. SUMMARY SLIDE
+            html = self.templates["summary"].render(
+                summary=lesson.get("concept_audio", "")[:200],
+                next_topic=lesson["next_topic"],
+                primary_color=pc, secondary_color=sc
+            )
+            path = os.path.join(self.output_dir, "slide_4_summary.png")
+            await self._screenshot(page, html, path, wait=1.5)
             frame_paths.append(path)
 
             await browser.close()
-            return frame_paths
 
-if __name__ == "__main__":
-    # Test
-    dummy_lesson = {
-        "title": "Math Magic Day 1",
-        "hook": "Namaste! Aaj hum kuch naya sikhenge.",
-        "explanation": "Addition ka matlab hai cheezon ko jodna.",
-        "example_problem": "2 + 2 = ?",
-        "example_answer": "Sahi jawab hai 4!",
-        "cta": "Subscribe for more!",
-        "visual_prompts": {"primary_color": "#ff0080", "secondary_color": "#00ffcc"}
-    }
-    engine = RenderEngine()
-    asyncio.run(engine.render_lesson(dummy_lesson))
+        return frame_paths

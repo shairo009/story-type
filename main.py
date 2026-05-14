@@ -1,6 +1,5 @@
 import os
 import sys
-import json
 import asyncio
 from datetime import datetime
 from src.math_engine import MathEngine
@@ -10,73 +9,95 @@ from src.video_engine import VideoEngine
 from src.uploader import YouTubeUploader
 
 async def main():
-    print("--- MathMagic AI: Starting Daily Production ---")
+    print("=" * 60)
+    print("MathMagic AI - Multi-Slide Teaching Video")
+    print("=" * 60)
 
-    # 1. Setup Engines
     math_engine = MathEngine()
     render_engine = RenderEngine()
     audio_engine = AudioEngine()
     video_engine = VideoEngine()
     uploader = YouTubeUploader()
 
-    # 2. Generate Lesson Content
+    # 1. Get current day & generate lesson
     day = math_engine.get_current_day()
-    lesson_data = math_engine.generate_lesson(day)
-    lesson_data["day"] = day
-    
-    print(f"Lesson: {lesson_data['title']}")
+    lesson = math_engine.generate_lesson(day)
+    lesson["day"] = day
+    print(f"\nLesson {day}: [{lesson['level']}] {lesson['topic']}")
 
-    # 3. Render Visual Frames (HTML to PNG)
-    print("Rendering 3D Visuals...")
-    frame_paths = await render_engine.render_lesson(lesson_data)
+    # 2. Render all 5 slides
+    print("\nRendering 5 slides...")
+    frame_paths = await render_engine.render_lesson(lesson)
+    print(f"Frames ready: {len(frame_paths)}")
 
-    # 4. Generate Audio (Hindi TTS)
-    print("Generating Hindi Audio...")
+    # 3. Generate audio for each slide
+    print("\nGenerating Hindi audio...")
     os.makedirs("temp_audio", exist_ok=True)
-    
-    # Advanced logic: 1 single long explanation audio
-    audio_path = "temp_audio/explanation.mp3"
-    await audio_engine.generate_audio(lesson_data["explanation"], audio_path)
-    
-    scenes_data = [{
-        "image_path": frame_paths[0],
-        "audio_path": audio_path,
-        "narration": lesson_data["explanation"]
-    }]
 
-    # 5. Compose Video
-    print("Composing Final Video...")
+    slide_audios = [
+        lesson["intro_text"],
+        lesson["concept_audio"],
+        lesson["graph_audio"],
+        lesson["example_audio"],
+        lesson["summary_audio"]
+    ]
+
+    scenes_data = []
+    for i, (frame, narration) in enumerate(zip(frame_paths, slide_audios)):
+        audio_path = f"temp_audio/slide_{i}.mp3"
+        success = await audio_engine.generate_audio(narration, audio_path)
+        if success and os.path.exists(audio_path):
+            scenes_data.append({
+                "image_path": frame,
+                "audio_path": audio_path,
+                "narration": narration
+            })
+        else:
+            print(f"  Audio failed for slide {i}, skipping.")
+
+    if not scenes_data:
+        print("ERROR: No scenes generated.")
+        sys.exit(1)
+
+    print(f"\n{len(scenes_data)}/5 slides have audio")
+
+    # 4. Compose final video
+    print("\nComposing video...")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"math_{lesson_data['level'].replace(' ', '_')}_{timestamp}.mp4"
+    level_safe = lesson['level'].replace(' ', '_').replace('/', '-')
+    output_filename = f"math_L{day}_{level_safe}_{timestamp}.mp4"
     video_path = video_engine.compose_video(scenes_data, output_filename, apply_overlay=False)
+    print(f"Video ready: {video_path}")
 
-    # 6. Upload to YouTube
-    print(f"Uploading Video: {video_path}")
+    # 5. Upload to YouTube
+    print("\nUploading to YouTube...")
     try:
+        title = f"Lesson {day}: {lesson['topic']} | {lesson['level']} | MathMagic #Shorts"
         description = (
-            f"Daily Math Magic - Day {day}: {lesson_data['title']}\n\n"
-            f"Learn Math the fun way with AI and 3D visuals!\n"
-            f"Topic: {lesson_data['explanation']}\n\n"
-            "#math #learning #hindi #shorts #education #ai"
+            f"📚 MathMagic - Lesson {day}\n"
+            f"🎯 Level: {lesson['level']}\n"
+            f"📖 Topic: {lesson['topic']}\n\n"
+            f"Aaj humne seekha: {lesson['topic']}\n"
+            f"Agli video mein: {lesson['next_topic']}\n\n"
+            "#math #education #hindi #shorts #learning #maths #mathmagic"
         )
         video_id = uploader.upload_video(
             file_path=video_path,
-            title=f"Math Magic Day {day}: {lesson_data['title']} | #Shorts",
+            title=title,
             description=description,
-            tags=["math", "education", "hindi", "shorts", "learning"]
+            tags=["math", "education", "hindi", "shorts", "learning", lesson["topic"].lower()]
         )
-        print(f"SUCCESS! YouTube URL: https://youtu.be/{video_id}")
-        
-        # Increment day count for tomorrow
+        print(f"\n✅ UPLOADED: https://youtu.be/{video_id}")
+
         math_engine.increment_day()
-        
-        # Cleanup
+
         if os.path.exists(video_path):
             os.remove(video_path)
+            print("Local video file cleaned up.")
 
     except Exception as e:
         print(f"YouTube upload failed: {e}")
-        print("Video saved locally for manual upload.")
+        print(f"Video saved locally: {video_path}")
 
 if __name__ == "__main__":
     asyncio.run(main())

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px; height: 1280px; overflow: hidden;
+    background: #070715;
+    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+    font-family: 'Segoe UI', sans-serif; color: white;
+    padding: 50px 30px;
+  }
+  .step-header { font-size: 22px; color: {{ primary_color }}; letter-spacing: 4px; text-transform: uppercase; margin-bottom: 20px; }
+  .graph-title { font-size: 40px; font-weight: 700; margin-bottom: 10px; text-align: center; }
+  .graph-subtitle { font-size: 24px; color: #999; margin-bottom: 30px; text-align: center; }
+  .chart-wrap {
+    width: 100%; height: 550px;
+    background: rgba(255,255,255,0.03);
+    border: 2px solid {{ primary_color }}44;
+    border-radius: 30px; padding: 20px;
+  }
+  .key-points { width: 100%; margin-top: 30px; }
+  .kp { 
+    background: rgba(255,255,255,0.05);
+    border-left: 5px solid {{ secondary_color }};
+    border-radius: 15px; padding: 20px 30px;
+    font-size: 26px; color: #ddd; margin-bottom: 15px;
+    line-height: 1.4;
+  }
+</style>
+</head>
+<body>
+  <div class="step-header">📊 Graph</div>
+  <div class="graph-title">{{ graph_label }}</div>
+  <div class="graph-subtitle">Ise dhyan se dekhein</div>
+  <div class="chart-wrap">
+    <canvas id="c"></canvas>
+  </div>
+  <div class="key-points">
+    {% for point in key_points %}
+    <div class="kp">✓ {{ point }}</div>
+    {% endfor %}
+  </div>
+  <script>
+    const ctx = document.getElementById('c').getContext('2d');
+    new Chart(ctx, {
+      type: '{{ graph_type }}',
+      data: {
+        labels: {{ graph_labels }},
+        datasets: [{
+          label: '{{ graph_label }}',
+          data: {{ graph_data }},
+          borderColor: '{{ primary_color }}',
+          backgroundColor: '{{ primary_color }}22',
+          borderWidth: 4,
+          fill: true,
+          tension: 0.5,
+          pointRadius: 6,
+          pointBackgroundColor: '{{ secondary_color }}'
+        }]
+      },
+      options: {
+        animation: false,
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { color: '#fff', font: { size: 20 } } }
+        },
+        scales: {
+          x: { ticks: { color: '#aaa', font: { size: 18 } }, grid: { color: '#ffffff11' } },
+          y: { ticks: { color: '#aaa', font: { size: 18 } }, grid: { color: '#ffffff11' } }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

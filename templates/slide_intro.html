@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 720px; height: 1280px; overflow: hidden;
+    background: linear-gradient(135deg, #0d0d2b 0%, #1a0533 50%, #0d1f2b 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Segoe UI', sans-serif; color: white;
+  }
+  .badge {
+    background: {{ primary_color }};
+    color: #000; font-weight: 900; font-size: 26px;
+    padding: 12px 30px; border-radius: 50px; margin-bottom: 40px;
+    box-shadow: 0 0 40px {{ primary_color }};
+    letter-spacing: 2px;
+  }
+  .lesson-num {
+    font-size: 30px; color: #aaa; letter-spacing: 5px; margin-bottom: 20px;
+    text-transform: uppercase;
+  }
+  .title {
+    font-size: 68px; font-weight: 900; text-align: center;
+    color: {{ secondary_color }};
+    text-shadow: 0 0 60px {{ secondary_color }};
+    line-height: 1.1; padding: 0 40px;
+  }
+  .subtitle {
+    font-size: 32px; color: #ccc; margin-top: 30px;
+    text-align: center; padding: 0 60px; line-height: 1.5;
+  }
+  .divider {
+    width: 120px; height: 5px;
+    background: {{ primary_color }};
+    border-radius: 10px; margin: 40px auto;
+    box-shadow: 0 0 20px {{ primary_color }};
+  }
+  .prev-lesson {
+    font-size: 24px; color: #888; margin-top: 20px;
+    text-align: center; padding: 0 60px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 20px 40px;
+  }
+  .stars {
+    position: absolute; width: 100%; height: 100%; z-index: -1;
+  }
+</style>
+</head>
+<body>
+  <div class="lesson-num">Lesson #{{ lesson_num }}</div>
+  <div class="badge">{{ level }}</div>
+  <div class="title">{{ title }}</div>
+  <div class="divider"></div>
+  <div class="subtitle">{{ intro_text }}</div>
+  {% if prev_topic %}
+  <div class="prev-lesson">🔁 Pichli baar: {{ prev_topic }}</div>
+  {% endif %}
+</body>
+</html>
