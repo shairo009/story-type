@@ -68,7 +68,7 @@ class VideoEngine:
         img.save(output_path)
         return output_path
 
-    def compose_video(self, scenes, output_filename):
+    def compose_video(self, scenes, output_filename, apply_overlay=True):
         clips = []
         
         for i, scene in enumerate(scenes):
@@ -77,16 +77,18 @@ class VideoEngine:
             narration = scene.get('narration', '')
             dialogue = scene.get('dialogue', '')
             
-            temp_image_with_text = f"temp_scene_{i}.png"
-            
-            # Use Dialogue for Bubble, Narration for Caption Box
-            if dialogue:
-                self.add_text_to_image(image_path, dialogue, temp_image_with_text, is_dialogue=True)
+            if apply_overlay:
+                temp_image_with_text = f"temp_scene_{i}.png"
+                if dialogue:
+                    self.add_text_to_image(image_path, dialogue, temp_image_with_text, is_dialogue=True)
+                else:
+                    self.add_text_to_image(image_path, narration, temp_image_with_text, is_dialogue=False)
+                processed_image = temp_image_with_text
             else:
-                self.add_text_to_image(image_path, narration, temp_image_with_text, is_dialogue=False)
+                processed_image = image_path
             
             audio = AudioFileClip(audio_path)
-            img_clip = ImageClip(temp_image_with_text)
+            img_clip = ImageClip(processed_image)
             w, h = img_clip.size
             if w % 2 != 0: w -= 1
             if h % 2 != 0: h -= 1

@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        :root {
+            --primary: {{ primary_color }};
+            --secondary: {{ secondary_color }};
+            --bg: #0a0a0a;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 720px;
+            height: 1280px;
+            overflow: hidden;
+            background-color: var(--bg);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, var(--primary) 0%, var(--bg) 70%);
+            opacity: 0.3;
+            z-index: -1;
+            animation: pulse 5s infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.2; }
+            100% { transform: scale(1.2); opacity: 0.4; }
+        }
+
+        .container {
+            width: 85%;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            position: relative;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            padding: 40px;
+            margin-top: 50px;
+            width: 100%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            transform: perspective(1000px) rotateX(10deg);
+            animation: float 4s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: perspective(1000px) rotateX(10deg) translateY(0); }
+            50% { transform: perspective(1000px) rotateX(10deg) translateY(-20px); }
+        }
+
+        h1 {
+            font-size: 50px;
+            margin: 0;
+            color: var(--secondary);
+            text-shadow: 0 0 20px var(--secondary);
+            text-transform: uppercase;
+        }
+
+        .step-text {
+            font-size: 32px;
+            line-height: 1.4;
+            margin: 40px 0;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease-out;
+        }
+
+        .active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .math-problem {
+            font-size: 80px;
+            font-weight: bold;
+            margin: 60px 0;
+            color: white;
+            text-shadow: 0 0 30px var(--primary);
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+
+        .number-3d {
+            display: inline-block;
+            transform-style: preserve-3d;
+            animation: spin 10s infinite linear;
+        }
+
+        @keyframes spin {
+            0% { transform: rotateY(0deg); }
+            100% { transform: rotateY(360deg); }
+        }
+
+        .cta {
+            position: absolute;
+            bottom: 50px;
+            font-size: 36px;
+            font-weight: bold;
+            padding: 20px 40px;
+            background: var(--primary);
+            border-radius: 50px;
+            box-shadow: 0 0 30px var(--primary);
+            animation: pulse-button 1.5s infinite;
+        }
+
+        @keyframes pulse-button {
+            0% { transform: scale(1); box-shadow: 0 0 20px var(--primary); }
+            50% { transform: scale(1.05); box-shadow: 0 0 50px var(--primary); }
+            100% { transform: scale(1); box-shadow: 0 0 20px var(--primary); }
+        }
+
+        .day-badge {
+            position: absolute;
+            top: -20px;
+            right: -20px;
+            background: white;
+            color: black;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        /* Particles or extra visuals based on theme */
+        .decoration {
+            position: absolute;
+            font-size: 100px;
+            opacity: 0.1;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="background"></div>
+    
+    <div class="container">
+        <div class="glass-card">
+            <div class="day-badge">DAY {{ day }}</div>
+            <h1>{{ title }}</h1>
+            
+            <div id="hook" class="step-text active">{{ hook }}</div>
+            <div id="explanation" class="step-text">{{ explanation }}</div>
+            
+            <div class="math-problem">
+                <span class="number-3d">{{ problem_display }}</span>
+            </div>
+
+            <div id="answer" class="step-text">{{ example_answer }}</div>
+        </div>
+
+        <div class="cta">{{ cta }}</div>
+    </div>
+
+    <script>
+        // Simple state management for screen capture
+        // We will call these from Playwright to switch scenes
+        function showStep(id) {
+            document.querySelectorAll('.step-text').forEach(el => el.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+    </script>
+</body>
+</html>
