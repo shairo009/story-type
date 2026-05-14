@@ -24,7 +24,8 @@ class StoryEngine:
         }
         
         prompt = f"""
-        Write a long 15-scene Hinglish COMIC story about {topic}.
+        Write a 10-scene Hinglish COMIC story about {topic}.
+        The story should be exactly 10 scenes to fit a 30-40 second video.
         
         RULES:
         1. 'narration': The AI narrator explaining the scene in Hinglish (Roman script).
@@ -36,11 +37,11 @@ class StoryEngine:
         - Andy: "A young boy named Andy with short CURLY BROWN hair, round glasses, and a white shirt."
         - Mona: "A young girl named Mona with short STRAIGHT BLACK hair and a pink striped shirt."
         
-        Return exactly 15 scenes in JSON format.
+        Return exactly 10 scenes in JSON format.
         """
         
         system_prompt = """You are a Professional Comic Production Director.
-Your task is to generate a 5-scene HINGLISH webcomic script.
+Your task is to generate a 10-scene HINGLISH webcomic script.
 
 ### PRODUCTION SETTINGS:
 - STYLE: Hand-drawn webcomic.
@@ -98,7 +99,7 @@ Keep 'image_prompt' under 150 characters. Describe the 4-panel grid simply.
         print("Story Fallback: Pollinations AI...")
         try:
             import urllib.parse
-            prompt = f"Write a 5-scene Hinglish comic story about {topic}. Use JSON: " + \
+            prompt = f"Write a 10-scene Hinglish comic story about {topic}. Use JSON: " + \
                      "{\"title\": \"Title\", \"scenes\": [{\"narration\": \"Hinglish\", \"dialogue\": \"Hinglish\", \"image_prompt\": \"English description\"}]}"
             url = f"https://text.pollinations.ai/{urllib.parse.quote(prompt)}"
             r = requests.get(url, timeout=60)
