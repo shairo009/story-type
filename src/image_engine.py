@@ -63,7 +63,25 @@ class ImageEngine:
             print(f"  Waiting {wait}s before retry...")
             time.sleep(wait)
 
-        print(f"  ERROR: All {retries} attempts failed for this scene. No fallback used.")
+        print(f"  ERROR: All {retries} attempts failed for Pollinations. Trying Fallback API (Hercai)...")
+        try:
+            # Fallback API: Hercai (Free)
+            hercai_url = f"https://hercai.onrender.com/v3/text2image?prompt={urllib.parse.quote(clean_prompt)}"
+            response = requests.get(hercai_url, timeout=60)
+            if response.status_code == 200:
+                res_json = response.json()
+                img_url = res_json.get("url")
+                if img_url:
+                    img_data = requests.get(img_url).content
+                    if self.is_valid_image(img_data):
+                        with open(output_path, "wb") as f:
+                            f.write(img_data)
+                        self.apply_comic_effects(output_path)
+                        print(f"  Image OK via Hercai Fallback.")
+                        return output_path
+        except Exception as e:
+            print(f"  Hercai Fallback also failed: {e}")
+
         return None
 
     def apply_comic_effects(self, image_path):
