@@ -7,9 +7,9 @@ load_dotenv()
 
 class StoryEngine:
     def __init__(self, api_key=None, base_url=None):
-        self.api_key = api_key or os.getenv("OPENCODE_API_KEY")
-        self.base_url = base_url or os.getenv("OPENCODE_BASE_URL") or "https://opencode.ai/zen"
-        self.model_name = os.getenv("OPENCODE_MODEL") or "minimax-m2.5-free"
+        self.api_key = (api_key or os.getenv("OPENCODE_API_KEY") or "").strip()
+        self.base_url = (base_url or os.getenv("OPENCODE_BASE_URL") or "https://opencode.ai/zen").strip()
+        self.model_name = (os.getenv("OPENCODE_MODEL") or "minimax-m2.5-free").strip()
         
         if not self.api_key:
             raise ValueError("OPENCODE_API_KEY not found.")

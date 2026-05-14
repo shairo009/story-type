@@ -6,9 +6,9 @@ load_dotenv()
 
 class AudioEngine:
     def __init__(self, api_key=None):
-        self.api_key = api_key or os.getenv("ELEVENLABS_API_KEY")
-        self.voice_id = os.getenv("ELEVENLABS_VOICE_ID") or "nPczCjzI2devNBz1zQrb"
-        self.model_id = os.getenv("ELEVENLABS_MODEL_ID") or "eleven_flash_v2_5"
+        self.api_key = (api_key or os.getenv("ELEVENLABS_API_KEY") or "").strip()
+        self.voice_id = (os.getenv("ELEVENLABS_VOICE_ID") or "nPczCjzI2devNBz1zQrb").strip()
+        self.model_id = (os.getenv("ELEVENLABS_MODEL_ID") or "eleven_flash_v2_5").strip()
         
         if not self.api_key:
             print("Warning: ELEVENLABS_API_KEY not found. Audio generation will fail.")
