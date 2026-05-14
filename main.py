@@ -118,7 +118,8 @@ async def main():
             processed_scenes.append({
                 "image_path": img_path,
                 "audio_path": audio_path,
-                "narration": scene.get("dialogue", "")
+                "narration": scene.get("narration", ""),
+                "dialogue": scene.get("dialogue", "")
             })
         else:
             print(f"Warning: Missing assets for scene {i+1}. Skipping.")
