@@ -42,34 +42,47 @@ class MathEngine:
             "Telling Time"
         ]
         
-        # Select topic based on day (loop if exceeded)
-        topic = topics[(day - 1) % len(topics)]
+        # Current and Previous topic
+        current_idx = (day - 1) % len(topics)
+        topic = topics[current_idx]
+        prev_topic = topics[current_idx - 1] if day > 1 else None
         
         # Styles for variety
         themes = ["Cyberpunk", "Space Adventure", "Magic Forest", "Neon Ocean", "Vintage Comic"]
         theme = themes[(day - 1) % len(themes)]
 
-        print(f"Generating Lesson for Day {day}: {topic} (Theme: {theme})...")
+        print(f"Generating Lesson for Day {day}: {topic} (Prev: {prev_topic})...")
+
+        continuity_instruction = ""
+        if prev_topic:
+            continuity_instruction = f"Start with: 'Dosto, pichli video mein humne {prev_topic} sikha tha, aur aaj hum {topic} sikhne wale hain!'"
+        else:
+            continuity_instruction = f"Start with a warm welcome like 'Namaste! Aaj se hum math ki ek mazedar series shuru kar rahe hain!'"
 
         prompt = f"""
         Generate a 30-second Math Lesson script for kids in Hindi (Hinglish/Roman script).
         Topic: {topic}
-        Current Series Day: {day}
+        Current Lesson Number: {day}
+        {continuity_instruction}
         
-        The lesson must be fun, high-energy, and educational.
+        RULES:
+        1. Keep it high energy and fun.
+        2. Explain the concept simply in 2-3 sentences.
+        3. Provide one practice problem and answer.
         
         JSON Structure:
         {{
-          "title": "Hindi Title",
-          "hook": "An engaging opening line in Hindi to grab attention",
+          "lesson_number": {day},
+          "title": "Lesson {day}: {topic} in Hindi",
+          "hook": "The intro sentence recapping previous lesson or welcoming",
           "explanation": "Simple step-by-step explanation in Hindi",
-          "example_problem": "A fun math problem using real-world objects",
-          "example_answer": "The answer with explanation",
+          "example_problem": "Fun math problem",
+          "example_answer": "Answer with explanation",
           "cta": "Fun call to action in Hindi to subscribe",
           "visual_prompts": {{
             "background_theme": "{theme}",
-            "primary_color": "A vibrant hex color based on theme",
-            "secondary_color": "A matching vibrant hex color"
+            "primary_color": "vibrant hex",
+            "secondary_color": "vibrant hex"
           }}
         }}
         """
