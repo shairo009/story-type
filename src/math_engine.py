@@ -28,59 +28,46 @@ class MathEngine:
             json.dump({"current_day": day + 1}, f)
 
     def generate_lesson(self, day=1):
-        # Topics progression
-        topics = [
-            "Introduction to Numbers (1-10)",
-            "Magic of Zero",
-            "Simple Addition with Fruits",
-            "Subtraction: The Vanishing Act",
-            "Multiplication: Fast Addition",
-            "Division: Sharing is Caring",
-            "Odd vs Even Numbers",
-            "Comparing Numbers: Greater or Smaller",
-            "Shapes in 3D",
-            "Telling Time"
-        ]
+        # Levels progression
+        levels = ["Primary (Class 1-5)", "Middle (Class 6-8)", "High School (Class 9-12)", "College/University", "PhD/Advanced Research"]
+        current_level = levels[(day - 1) % len(levels)]
+
+        # Topics per level
+        topics_map = {
+            "Primary (Class 1-5)": ["Tables & Counting", "Addition Magic", "Fraction Fun", "Geometric Shapes"],
+            "Middle (Class 6-8)": ["Algebra Basics", "Ratio & Proportion", "Square Roots", "Simple Geometry"],
+            "High School (Class 9-12)": ["Calculus: Derivatives", "Trigonometry Hacks", "Quadratic Equations", "Probability Laws"],
+            "College/University": ["Linear Algebra: Matrices", "Complex Analysis", "Differential Equations", "Number Theory"],
+            "PhD/Advanced Research": ["Quantum Math", "Riemann Hypothesis", "String Theory Equations", "Chaos Theory Logic"]
+        }
         
-        # Current and Previous topic
-        current_idx = (day - 1) % len(topics)
-        topic = topics[current_idx]
-        prev_topic = topics[current_idx - 1] if day > 1 else None
+        # Select topic based on level and rotation
+        topics_pool = topics_map[current_level]
+        topic = topics_pool[((day - 1) // len(levels)) % len(topics_pool)]
         
         # Styles for variety
-        themes = ["Cyberpunk", "Space Adventure", "Magic Forest", "Neon Ocean", "Vintage Comic"]
+        themes = ["Cyberpunk", "Deep Space", "Abstract Geometric", "Matrix Neon", "Golden Ratio"]
         theme = themes[(day - 1) % len(themes)]
 
-        print(f"Generating Lesson for Day {day}: {topic} (Prev: {prev_topic})...")
-
-        continuity_instruction = ""
-        if prev_topic:
-            continuity_instruction = f"Start with: 'Dosto, pichli video mein humne {prev_topic} sikha tha, aur aaj hum {topic} sikhne wale hain!'"
-        else:
-            continuity_instruction = f"Start with a warm welcome like 'Namaste! Aaj se hum math ki ek mazedar series shuru kar rahe hain!'"
+        print(f"Generating ADVANCED Lesson for Day {day}: {topic} ({current_level})...")
 
         prompt = f"""
-        Generate a 30-second Math Lesson script for kids in Hindi (Hinglish/Roman script).
+        Generate a Professional Advanced Math Lesson script in Hindi (Roman script).
+        Level: {current_level}
         Topic: {topic}
         Current Lesson Number: {day}
-        {continuity_instruction}
         
-        RULES:
-        1. Keep it high energy and fun.
-        2. Explain the concept simply in 2-3 sentences.
-        3. Provide one practice problem and answer.
+        The content must be academically accurate but presented in a fast-paced, cool way for YouTube Shorts.
         
         JSON Structure:
         {{
-          "lesson_number": {day},
-          "title": "Lesson {day}: {topic} in Hindi",
-          "hook": "The intro sentence recapping previous lesson or welcoming",
-          "explanation": "Simple step-by-step explanation in Hindi",
-          "example_problem": "Fun math problem",
-          "example_answer": "Answer with explanation",
-          "cta": "Fun call to action in Hindi to subscribe",
+          "level": "{current_level}",
+          "title": "Advanced {topic}",
+          "explanation": "Deep logical explanation in Hindi (Hinglish)",
+          "equation": "A beautiful LaTeX-style or text equation (e.g., e=mc^2 or Integral symbols)",
+          "graph_label": "What the graph represents",
+          "graph_data": [a list of 10-15 numbers for a chart.js line graph],
           "visual_prompts": {{
-            "background_theme": "{theme}",
             "primary_color": "vibrant hex",
             "secondary_color": "vibrant hex"
           }}
@@ -95,7 +82,7 @@ class MathEngine:
         
         data = {
             "model": self.model_name,
-            "max_tokens": 1024,
+            "max_tokens": 1500,
             "messages": [{"role": "user", "content": prompt}]
         }
 
@@ -104,22 +91,21 @@ class MathEngine:
             if response.status_code == 200:
                 result = response.json()
                 content = result["content"][0]["text"].strip()
-                # Simple cleaning
                 if "```json" in content:
                     content = content.split("```json")[1].split("```")[0].strip()
                 return json.loads(content)
         except Exception as e:
-            print(f"Error generating lesson: {e}")
-            # Minimal fallback
+            print(f"Error generating advanced lesson: {e}")
             return {
-                "title": f"Day {day}: Math Magic",
-                "hook": "Namaste dosto! Kya aap taiyar hain math ki nayi trick ke liye?",
-                "explanation": f"Aaj hum sikhenge {topic} ke baare mein.",
-                "example_problem": "Agar aapke paas 2 apple hain aur 1 aur mil jaye, toh kitne honge?",
-                "example_answer": "Bilkul sahi, 3 apples!",
-                "cta": "Aisi hi mazedar video ke liye Subscribe karein!",
-                "visual_prompts": {"background_theme": theme, "primary_color": "#ff0080", "secondary_color": "#00ffcc"}
+                "level": current_level,
+                "title": f"The Beauty of {topic}",
+                "explanation": f"Dosto, aaj hum {topic} ki gehrayi mein jayenge. Iske peeche ka logic bohot hi simple hai agar aap dhyan se dekhein.",
+                "equation": "dy/dx = lim(h->0) [f(x+h) - f(x)]/h",
+                "graph_label": "Function Growth",
+                "graph_data": [1, 2, 4, 8, 16, 32, 64, 128, 256, 512],
+                "visual_prompts": {"primary_color": "#00ff00", "secondary_color": "#00ffff"}
             }
+
 
 if __name__ == "__main__":
     engine = MathEngine()

@@ -34,30 +34,20 @@ async def main():
     print("Generating Hindi Audio...")
     os.makedirs("temp_audio", exist_ok=True)
     
-    # We create audio for each scene: hook, explanation, problem, answer
-    script_parts = [
-        lesson_data["hook"],
-        lesson_data["explanation"],
-        lesson_data["example_problem"],
-        lesson_data["example_answer"]
-    ]
+    # Advanced logic: 1 single long explanation audio
+    audio_path = "temp_audio/explanation.mp3"
+    await audio_engine.generate_audio(lesson_data["explanation"], audio_path)
     
-    scenes_data = []
-    for i, (frame, text) in enumerate(zip(frame_paths, script_parts)):
-        audio_path = f"temp_audio/scene_{i}.mp3"
-        # We use await since AudioEngine is async
-        success = await audio_engine.generate_audio(text, audio_path)
-        if success:
-            scenes_data.append({
-                "image_path": frame,
-                "audio_path": audio_path,
-                "narration": text # fallback text
-            })
+    scenes_data = [{
+        "image_path": frame_paths[0],
+        "audio_path": audio_path,
+        "narration": lesson_data["explanation"]
+    }]
 
     # 5. Compose Video
     print("Composing Final Video...")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"math_day_{day}_{timestamp}.mp4"
+    output_filename = f"math_{lesson_data['level'].replace(' ', '_')}_{timestamp}.mp4"
     video_path = video_engine.compose_video(scenes_data, output_filename, apply_overlay=False)
 
     # 6. Upload to YouTube

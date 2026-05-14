@@ -1,10 +1,11 @@
 import os
 import asyncio
+import json
 from playwright.async_api import async_playwright
 from jinja2 import Template
 
 class RenderEngine:
-    def __init__(self, template_path="templates/math_3d.html"):
+    def __init__(self, template_path="templates/advanced_3d_math.html"):
         with open(template_path, "r", encoding="utf-8") as f:
             self.template_content = f.read()
         self.output_dir = "temp_frames"
@@ -15,45 +16,31 @@ class RenderEngine:
             browser = await p.chromium.launch()
             page = await browser.new_page(viewport={"width": 720, "height": 1280})
             
-            # Prepare data for Template
             template = Template(self.template_content)
             
-            # We will render 4 frames (scenes)
-            scenes = ["hook", "explanation", "example_problem", "example_answer"]
+            # We render 1 long take or multiple frames. 
+            # For shorts, 1-2 frames with long audio is fine, but we'll do 1 high-quality frame.
+            render_data = {
+                "level": lesson_data["level"],
+                "title": lesson_data["title"],
+                "explanation": lesson_data["explanation"],
+                "equation": lesson_data["equation"],
+                "graph_label": lesson_data["graph_label"],
+                "graph_data": json.dumps(lesson_data["graph_data"]),
+                "primary_color": lesson_data["visual_prompts"]["primary_color"],
+                "secondary_color": lesson_data["visual_prompts"]["secondary_color"]
+            }
+            
+            html = template.render(**render_data)
+            await page.set_content(html)
+            
+            # Wait for Three.js and Chart.js to animate
+            await asyncio.sleep(3)
+            
             frame_paths = []
-
-            for i, scene_id in enumerate(scenes):
-                # Map lesson data to template fields
-                render_data = {
-                    "title": lesson_data["title"],
-                    "day": lesson_data.get("day", 1),
-                    "hook": lesson_data["hook"],
-                    "explanation": lesson_data["explanation"],
-                    "example_answer": lesson_data["example_answer"],
-                    "cta": lesson_data["cta"],
-                    "problem_display": lesson_data["example_problem"],
-                    "primary_color": lesson_data["visual_prompts"]["primary_color"],
-                    "secondary_color": lesson_data["visual_prompts"]["secondary_color"]
-                }
-                
-                html = template.render(**render_data)
-                await page.set_content(html)
-                
-                # Switch to the specific step
-                if scene_id == "explanation":
-                    await page.evaluate("showStep('explanation')")
-                elif scene_id == "example_answer":
-                    await page.evaluate("showStep('answer')")
-                elif scene_id == "example_problem":
-                     await page.evaluate("showStep('explanation')") # Keep explanation or just problem
-
-                # Wait for animations to settle
-                await asyncio.sleep(1)
-                
-                path = os.path.join(self.output_dir, f"frame_{i}.png")
-                await page.screenshot(path=path)
-                frame_paths.append(path)
-                print(f"Rendered frame {i}: {scene_id}")
+            path = os.path.join(self.output_dir, f"advanced_frame.png")
+            await page.screenshot(path=path)
+            frame_paths.append(path)
 
             await browser.close()
             return frame_paths

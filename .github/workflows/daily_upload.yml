@@ -2,8 +2,8 @@ name: Daily YouTube Upload
 
 on:
   schedule:
-    # Run every 4 hours (6 times a day)
-    - cron: '0 */4 * * *'
+    # Run every 6 hours (4 times a day)
+    - cron: '0 */6 * * *'
   workflow_dispatch: # Allow manual trigger
 
 jobs:
