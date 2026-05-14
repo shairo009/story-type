@@ -1,110 +1,15 @@
 name: Daily YouTube Upload
-
 on:
-  schedule:
-    - cron: '0 */4 * * *'
   workflow_dispatch:
-
-permissions:
-  contents: write
-
-jobs:
-  upload:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get install -y imagemagick ffmpeg
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install PyNaCl
-
-      - name: Configure ImageMagick
-        run: |
-          sudo sed -i 's/rights="none" pattern="PDF"/rights="read|write" pattern="PDF"/' /etc/ImageMagick-6/policy.xml
-          sudo sed -i 's/rights="none" pattern="LABEL"/rights="read|write" pattern="LABEL"/' /etc/ImageMagick-6/policy.xml
-
-      - name: Write credentials
-        env:
-          TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
-          CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
-        run: |
-          echo "$TOKEN_JSON" > token.json
-          echo "$CLIENT_SECRETS_JSON" > client_secrets.json
-
-      - name: Run Pipeline
-        env:
-          OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-        run: |
-          python main.py
-
-      - name: Refresh TOKEN_JSON secret
-        if: always()
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -f token.json ]; then
-            TOKEN_CONTENT=$(python3 -c "import sys; print(open('token.json').read().strip())")
-            PUBLIC_KEY_JSON=$(curl -s -H "Authorization: token $GH_PAT" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/secrets/public-key")
-            KEY_ID=$(echo "$PUBLIC_KEY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['key_id'])")
-            KEY=$(echo "$PUBLIC_KEY_JSON" | python3 -c "import sys,json; print(json.load(sys.stdin)['key'])")
-            ENCRYPTED=$(python3 -c "
-import sys
-from base64 import b64encode
-from nacl import encoding, public
-pub_key = public.PublicKey(sys.argv[1].encode(), encoding.Base64Encoder())
-enc = public.SealedBox(pub_key).encrypt(sys.argv[2].encode())
-print(b64encode(enc).decode())
-" "$KEY" "$TOKEN_CONTENT")
-            curl -s -X PUT \
-              -H "Authorization: token $GH_PAT" \
-              -H "Content-Type: application/json" \
-              "https://api.github.com/repos/${{ github.repository }}/actions/secrets/TOKEN_JSON" \
-              -d "{\"encrypted_value\":\"$ENCRYPTED\",\"key_id\":\"$KEY_ID\"}"
-            echo "TOKEN_JSON secret refreshed."
-          fi
-
-      - name: Save updated video history
-        if: success()
-        env:
-          GH_PAT: ${{ secrets.GH_PAT }}
-        run: |
-          if [ -f video_history.json ]; then
-            CONTENT=$(base64 -w 0 video_history.json)
-            SHA=$(curl -s -H "Authorization: token $GH_PAT" \
-              "https://api.github.com/repos/${{ github.repository }}/contents/video_history.json" \
-              | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('sha',''))")
-            PAYLOAD="{\"message\":\"chore: update video history [skip ci]\",\"content\":\"$CONTENT\""
-            if [ -n "$SHA" ]; then
-              PAYLOAD="$PAYLOAD,\"sha\":\"$SHA\""
-            fi
-            PAYLOAD="$PAYLOAD}"
-            curl -s -X PUT \
-              -H "Authorization: token $GH_PAT" \
-              -H "Content-Type: application/json" \
-              "https://api.github.com/repos/${{ github.repository }}/contents/video_history.json" \
-              -d "$PAYLOAD"
-            echo "video_history.json saved to repo."
-          fi
-
-      - name: Upload video as artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: comic-video-${{ github.run_number }}
-          path: outputs/*.mp4
-          retention-days: 7
-          if-no-files-found: warn
+  jobs:
+    upload:
+        runs-on: ubuntu-latest
+            steps:
+                  - uses: actions/checkout@v4
+                        - run: python main.py
+                                env:
+                                          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+                                                    PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
+                                                              TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
+                                                                        CLIENT_SECRETS_JSON: ${{ secrets.CLIENT_SECRETS_JSON }}
+                                                                        
