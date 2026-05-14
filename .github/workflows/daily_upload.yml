@@ -34,7 +34,7 @@ jobs:
       - name: Run Pipeline
         env:
           OPENCODE_API_KEY: ${{ secrets.OPENCODE_API_KEY }}
-          OPENCODE_BASE_URL: "https://api.minimax.io/v1"
+          OPENCODE_BASE_URL: "https://opencode.ai/zen"
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
           TOKEN_JSON: ${{ secrets.TOKEN_JSON }}
