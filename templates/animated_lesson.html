@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  width:720px; height:1280px; overflow:hidden;
+  background: #080818;
+  font-family: 'Segoe UI', sans-serif; color:white;
+}
+
+/* ============ BACKGROUND GRID ANIMATION ============ */
+.grid-bg {
+  position:absolute; width:100%; height:100%; z-index:0;
+  background-image: 
+    linear-gradient(rgba(0,200,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,200,255,0.05) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridMove 20s linear infinite;
+}
+@keyframes gridMove { from { background-position: 0 0; } to { background-position: 60px 60px; } }
+
+/* ============ FLOATING MATH SYMBOLS ============ */
+.symbols {
+  position:absolute; width:100%; height:100%; z-index:0; overflow:hidden;
+}
+.sym {
+  position:absolute; font-size:40px; opacity:0.06; color:#00e5ff;
+  animation: floatSym 15s infinite linear;
+}
+@keyframes floatSym {
+  from { transform: translateY(1400px) rotate(0deg); opacity:0; }
+  10% { opacity:0.08; }
+  90% { opacity:0.08; }
+  to { transform: translateY(-100px) rotate(360deg); opacity:0; }
+}
+
+/* ============ MAIN CONTENT ============ */
+.content {
+  position:relative; z-index:10;
+  width:100%; height:100%;
+  display:flex; flex-direction:column;
+  align-items:center; padding:50px 40px;
+}
+
+/* Header */
+.header { width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; }
+.class-badge {
+  background: {{ primary_color }};
+  color:#000; font-weight:900; font-size:22px;
+  padding:10px 24px; border-radius:30px;
+  box-shadow: 0 0 30px {{ primary_color }};
+}
+.lesson-tag { font-size:20px; color:#888; letter-spacing:3px; }
+
+/* Title */
+.title {
+  font-size:56px; font-weight:900; text-align:center;
+  line-height:1.15; margin-bottom:15px;
+  background: linear-gradient(135deg, {{ primary_color }}, {{ secondary_color }});
+  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  animation: titleIn 0.8s ease-out both;
+}
+@keyframes titleIn { from { opacity:0; transform:translateY(-30px); } to { opacity:1; transform:translateY(0); } }
+
+.chapter-tag { font-size:22px; color:#666; margin-bottom:40px; letter-spacing:1px; }
+
+/* ============ ANIMATED EQUATION WRITER ============ */
+.equation-stage {
+  width:100%; background:#000;
+  border:2px solid {{ primary_color }}55;
+  border-radius:25px; padding:35px 30px;
+  margin-bottom:25px; position:relative;
+  overflow:hidden;
+}
+.eq-label {
+  font-size:18px; color:{{ primary_color }}; letter-spacing:3px;
+  text-transform:uppercase; margin-bottom:20px;
+}
+.equation-text {
+  font-family:'Courier New', monospace;
+  font-size:48px; font-weight:700;
+  color:{{ secondary_color }};
+  text-shadow: 0 0 20px {{ secondary_color }};
+  text-align:center; line-height:1.4;
+  /* Typewriter animation */
+  overflow:hidden; white-space:pre-wrap;
+  border-right: 4px solid {{ primary_color }};
+  animation: typing 2s steps(30,end) both, blink 0.8s step-end infinite 2s;
+}
+@keyframes typing { from { max-height:0; opacity:0; } to { max-height:500px; opacity:1; } }
+@keyframes blink { 0%,100% { border-color:{{ primary_color }}; } 50% { border-color:transparent; } }
+
+/* Glow sweep effect */
+.eq-glow {
+  position:absolute; top:0; left:-100%; width:60%; height:100%;
+  background: linear-gradient(90deg, transparent, {{ primary_color }}11, transparent);
+  animation: sweep 3s ease-in-out infinite 2s;
+}
+@keyframes sweep { from { left:-100%; } to { left:200%; } }
+
+/* ============ EXPLANATION STEPS ============ */
+.steps { width:100%; }
+.step {
+  display:flex; align-items:flex-start; gap:20px;
+  background:rgba(255,255,255,0.03);
+  border-left:5px solid {{ primary_color }};
+  border-radius:0 20px 20px 0;
+  padding:22px 25px; margin-bottom:18px;
+  opacity:0; transform:translateX(-40px);
+}
+.step:nth-child(1) { animation: stepIn 0.6s ease-out 0.5s both; }
+.step:nth-child(2) { animation: stepIn 0.6s ease-out 1.0s both; }
+.step:nth-child(3) { animation: stepIn 0.6s ease-out 1.5s both; }
+.step:nth-child(4) { animation: stepIn 0.6s ease-out 2.0s both; }
+@keyframes stepIn { from { opacity:0; transform:translateX(-40px); } to { opacity:1; transform:translateX(0); } }
+
+.step-num {
+  min-width:44px; height:44px; border-radius:50%;
+  background:{{ primary_color }}; color:#000;
+  font-weight:900; font-size:20px;
+  display:flex; align-items:center; justify-content:center;
+}
+.step-text { font-size:26px; line-height:1.5; color:#ddd; }
+
+/* ============ VISUAL DIAGRAM AREA ============ */
+.diagram-area {
+  width:100%; flex:1;
+  background:rgba(255,255,255,0.02);
+  border:1px solid rgba(255,255,255,0.08);
+  border-radius:25px; padding:25px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; overflow:hidden;
+}
+
+/* Number line animation */
+.number-line-wrap { width:100%; position:relative; padding:20px 0; }
+.number-line {
+  height:4px; background:{{ primary_color }}44;
+  position:relative; border-radius:4px;
+  animation: drawLine 1s ease-out both;
+}
+@keyframes drawLine { from { width:0; } to { width:100%; } }
+.nl-arrow {
+  position:absolute; right:-10px; top:-8px;
+  width:0; height:0;
+  border-left:20px solid {{ primary_color }};
+  border-top:10px solid transparent;
+  border-bottom:10px solid transparent;
+}
+.nl-point {
+  position:absolute; top:-10px; width:22px; height:22px;
+  background:{{ primary_color }}; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  font-size:14px; font-weight:700; color:#000;
+  animation: popIn 0.4s ease-out both;
+  box-shadow: 0 0 15px {{ primary_color }};
+}
+@keyframes popIn { from { transform:scale(0); } to { transform:scale(1); } }
+.nl-label {
+  position:absolute; top:20px;
+  font-size:18px; color:#aaa; text-align:center;
+  width:30px; margin-left:-15px;
+}
+
+/* SVG shape drawing animation */
+.animated-shape {
+  stroke-dasharray:1000;
+  stroke-dashoffset:1000;
+  animation: draw 2s ease-out 0.5s both;
+}
+@keyframes draw { to { stroke-dashoffset:0; } }
+
+/* Fraction display */
+.fraction {
+  display:inline-flex; flex-direction:column; align-items:center;
+  font-size:52px; font-weight:900; color:white;
+  animation: popIn 0.6s ease-out both;
+}
+.fraction-line {
+  width:100%; height:5px;
+  background:{{ primary_color }};
+  box-shadow: 0 0 10px {{ primary_color }};
+  margin:4px 0;
+}
+
+/* ============ BOTTOM CTA ============ */
+.cta-bar {
+  width:100%; margin-top:20px;
+  background:{{ primary_color }}22;
+  border:2px solid {{ primary_color }};
+  border-radius:20px; padding:20px 30px;
+  display:flex; align-items:center; justify-content:space-between;
+  animation: slideUp 0.8s ease-out 2.5s both;
+}
+@keyframes slideUp { from { opacity:0; transform:translateY(30px); } to { opacity:1; transform:translateY(0); } }
+.cta-text { font-size:26px; font-weight:700; }
+.subscribe-btn {
+  background:{{ primary_color }}; color:#000;
+  font-weight:900; font-size:22px;
+  padding:12px 28px; border-radius:15px;
+  animation: pulse 1.5s infinite 3s;
+}
+@keyframes pulse { 0%,100% { box-shadow:0 0 20px {{ primary_color }}; } 50% { box-shadow:0 0 50px {{ primary_color }}; } }
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="symbols">
+  <span class="sym" style="left:5%; animation-delay:0s">∫</span>
+  <span class="sym" style="left:20%; animation-delay:3s">π</span>
+  <span class="sym" style="left:40%; animation-delay:7s">∑</span>
+  <span class="sym" style="left:60%; animation-delay:2s">√</span>
+  <span class="sym" style="left:75%; animation-delay:5s">∞</span>
+  <span class="sym" style="left:90%; animation-delay:1s">Δ</span>
+  <span class="sym" style="left:50%; animation-delay:9s">θ</span>
+</div>
+
+<div class="content">
+  <div class="header">
+    <div class="class-badge">Class {{ class_num }}</div>
+    <div class="lesson-tag">LESSON #{{ lesson_num }}</div>
+  </div>
+
+  <div class="title">{{ title }}</div>
+  <div class="chapter-tag">Chapter {{ chapter_num }}: {{ topic }}</div>
+
+  <div class="equation-stage">
+    <div class="eq-label">📐 Formula / Concept</div>
+    <div class="equation-text">{{ equation }}</div>
+    <div class="eq-glow"></div>
+  </div>
+
+  <div class="steps">
+    {% for step in steps %}
+    <div class="step">
+      <div class="step-num">{{ loop.index }}</div>
+      <div class="step-text">{{ step }}</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <div class="cta-bar">
+    <div class="cta-text">🔔 {{ next_lesson_text }}</div>
+    <div class="subscribe-btn">SUBSCRIBE</div>
+  </div>
+</div>
+</body>
+</html>

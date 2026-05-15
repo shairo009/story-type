@@ -8,9 +8,10 @@ from src.audio_engine import AudioEngine
 from src.video_engine import VideoEngine
 from src.uploader import YouTubeUploader
 
+
 async def main():
     print("=" * 60)
-    print("MathMagic AI - Multi-Slide Teaching Video")
+    print("  MathMagic AI — NCERT Series Bot")
     print("=" * 60)
 
     math_engine = MathEngine()
@@ -19,85 +20,90 @@ async def main():
     video_engine = VideoEngine()
     uploader = YouTubeUploader()
 
-    # 1. Get current day & generate lesson
+    # 1. Get lesson from NCERT curriculum (sequential)
     day = math_engine.get_current_day()
     lesson = math_engine.generate_lesson(day)
-    lesson["day"] = day
-    print(f"\nLesson {day}: [{lesson['level']}] {lesson['topic']}")
+    print(f"\n✅ Lesson ready: Class {lesson['class_num']} | {lesson['topic']}")
 
-    # 2. Render all 5 slides
-    print("\nRendering 5 slides...")
+    # 2. Render animated frames (18 frames @ 200ms = smooth animation)
+    print("\nRendering animated frames...")
     frame_paths = await render_engine.render_lesson(lesson)
-    print(f"Frames ready: {len(frame_paths)}")
 
-    # 3. Generate audio for each slide
+    # 3. Generate Hindi audio (3 parts: intro + main + outro)
     print("\nGenerating Hindi audio...")
     os.makedirs("temp_audio", exist_ok=True)
 
-    slide_audios = [
-        lesson["intro_text"],
-        lesson["concept_audio"],
-        lesson["graph_audio"],
-        lesson["example_audio"],
-        lesson["summary_audio"]
+    audios = [
+        ("intro", lesson["intro_audio"]),
+        ("main",  lesson["main_audio"]),
+        ("outro", lesson["outro_audio"])
     ]
 
-    scenes_data = []
-    for i, (frame, narration) in enumerate(zip(frame_paths, slide_audios)):
-        audio_path = f"temp_audio/slide_{i}.mp3"
-        success = await audio_engine.generate_audio(narration, audio_path)
-        if success and os.path.exists(audio_path):
-            scenes_data.append({
-                "image_path": frame,
-                "audio_path": audio_path,
-                "narration": narration
-            })
+    audio_paths = []
+    for name, text in audios:
+        path = f"temp_audio/{name}.mp3"
+        ok = await audio_engine.generate_audio(text, path)
+        if ok and os.path.exists(path):
+            audio_paths.append(path)
+            print(f"  Audio {name}: OK")
         else:
-            print(f"  Audio failed for slide {i}, skipping.")
+            print(f"  Audio {name}: FAILED")
 
-    if not scenes_data:
-        print("ERROR: No scenes generated.")
+    if not audio_paths:
+        print("ERROR: No audio generated.")
         sys.exit(1)
 
-    print(f"\n{len(scenes_data)}/5 slides have audio")
+    # 4. Build scenes — distribute animation frames across audio segments
+    # frames_per_audio: spread all 18 frames across 3 audio parts
+    frames_per_part = max(1, len(frame_paths) // len(audio_paths))
+    scenes_data = []
 
-    # 4. Compose final video
+    for i, audio_path in enumerate(audio_paths):
+        start = i * frames_per_part
+        end = start + frames_per_part if i < len(audio_paths) - 1 else len(frame_paths)
+        part_frames = frame_paths[start:end]
+        # Use last frame of each part as the static image for that scene
+        chosen_frame = part_frames[-1] if part_frames else frame_paths[-1]
+        scenes_data.append({
+            "image_path": chosen_frame,
+            "audio_path": audio_path,
+            "narration": audios[i][1]
+        })
+
+    # 5. Compose video
     print("\nComposing video...")
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    level_safe = lesson['level'].replace(' ', '_').replace('/', '-')
-    output_filename = f"math_L{day}_{level_safe}_{timestamp}.mp4"
-    video_path = video_engine.compose_video(scenes_data, output_filename, apply_overlay=False)
-    print(f"Video ready: {video_path}")
+    safe = lesson['topic'].replace(' ', '_').replace('/', '-')[:30]
+    out_file = f"math_C{lesson['class_num']}_L{day}_{safe}_{timestamp}.mp4"
+    video_path = video_engine.compose_video(scenes_data, out_file, apply_overlay=False)
+    print(f"Video: {video_path}")
 
-    # 5. Upload to YouTube
+    # 6. Upload
     print("\nUploading to YouTube...")
     try:
-        title = f"Lesson {day}: {lesson['topic']} | {lesson['level']} | MathMagic #Shorts"
-        description = (
-            f"📚 MathMagic - Lesson {day}\n"
-            f"🎯 Level: {lesson['level']}\n"
-            f"📖 Topic: {lesson['topic']}\n\n"
-            f"Aaj humne seekha: {lesson['topic']}\n"
-            f"Agli video mein: {lesson['next_topic']}\n\n"
-            "#math #education #hindi #shorts #learning #maths #mathmagic"
+        title = (
+            f"Class {lesson['class_num']} Math: {lesson['topic']} | "
+            f"Lesson {day} | Hindi | #Shorts"
         )
-        video_id = uploader.upload_video(
-            file_path=video_path,
-            title=title,
-            description=description,
-            tags=["math", "education", "hindi", "shorts", "learning", lesson["topic"].lower()]
+        desc = (
+            f"📚 MathMagic NCERT Series — Lesson {day}\n"
+            f"🏫 Class: {lesson['class_num']}\n"
+            f"📖 Chapter {lesson['chapter_num']}: {lesson['topic']}\n\n"
+            f"{lesson['next_lesson_text']}\n\n"
+            "#math #ncert #class{} #hindi #shorts #education #maths".format(lesson['class_num'])
         )
-        print(f"\n✅ UPLOADED: https://youtu.be/{video_id}")
-
+        vid_id = uploader.upload_video(
+            file_path=video_path, title=title, description=desc,
+            tags=["math", "ncert", "hindi", "shorts", "education", f"class{lesson['class_num']}"]
+        )
+        print(f"\n✅ LIVE: https://youtu.be/{vid_id}")
         math_engine.increment_day()
-
         if os.path.exists(video_path):
             os.remove(video_path)
-            print("Local video file cleaned up.")
-
     except Exception as e:
-        print(f"YouTube upload failed: {e}")
-        print(f"Video saved locally: {video_path}")
+        print(f"Upload error: {e}")
+        print(f"Video saved at: {video_path}")
+
 
 if __name__ == "__main__":
     asyncio.run(main())
